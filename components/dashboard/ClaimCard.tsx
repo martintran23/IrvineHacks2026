@@ -52,7 +52,7 @@ export function ClaimCard({
   return (
     <div
       className={cn(
-        "group border rounded-lg p-4 transition-all duration-200 cursor-pointer",
+        "group border rounded-lg p-4 transition-smooth cursor-pointer hover-lift",
         "hover:border-white/20 hover:bg-white/[0.02]",
         severity === "critical" && "border-red-500/30 bg-red-500/[0.03]",
         severity === "warning" && "border-amber-500/20",
@@ -90,7 +90,7 @@ export function ClaimCard({
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-4 ml-10 space-y-3 animate-fade-up" style={{ animationDuration: "0.2s" }}>
+        <div className="mt-4 ml-10 space-y-3 animate-fade-in">
           {/* Explanation */}
           <p className="text-sm text-muted-foreground leading-relaxed">{explanation}</p>
 

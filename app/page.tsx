@@ -95,27 +95,27 @@ export default function LandingPage() {
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-16">
         <div className="max-w-2xl w-full text-center mb-12">
           {/* Decorative badge */}
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500/20 bg-red-500/5 mb-6">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-red-500/20 bg-red-500/5 mb-6 animate-fade-in hover-lift">
+            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse-slow" />
             <span className="text-xs font-mono text-red-400/80">AI-Powered Due Diligence</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-display text-foreground leading-[1.1] mb-4">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-display text-foreground leading-[1.1] mb-4 animate-fade-in-up">
             Cross-examine any listing
             <br />
-            <span className="text-red-400">before you trust it.</span>
+            <span className="text-red-400 gradient-text">before you trust it.</span>
           </h1>
 
-          <p className="text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-lg max-w-lg mx-auto leading-relaxed animate-fade-in-up stagger-1">
             Paste an address. We extract every claim, check it against public records,
             and build you a buyer war room with questions, docs to request, and inspection priorities.
           </p>
         </div>
 
         {/* Search form */}
-        <div className="max-w-xl w-full">
+        <div className="max-w-xl w-full animate-fade-in-up stagger-2">
           <div className="relative">
-            <div className="pr-36">
+            <div className="pr-28 sm:pr-36">
               <PropertySearch
                 initialAddress={address}
                 onAddressChange={(newAddress) => setAddress(newAddress)}
@@ -137,13 +137,15 @@ export default function LandingPage() {
             <Button
               onClick={() => handleAnalyze()}
               disabled={loading || !address || address.length < 5}
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white gap-2 z-10"
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-red-500 hover:bg-red-600 text-white gap-2 z-10 transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none text-xs sm:text-sm px-3 sm:px-4"
             >
               {loading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  Analyze <ArrowRight className="w-4 h-4" />
+                  <span className="hidden sm:inline">Analyze</span>
+                  <span className="sm:hidden">Go</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </Button>
@@ -162,27 +164,27 @@ export default function LandingPage() {
           </button>
 
           {showAdvanced && (
-            <div className="mt-4 space-y-3 animate-fade-up" style={{ animationDuration: "0.3s" }}>
+            <div className="mt-4 space-y-3 animate-fade-in-up">
               <textarea
                 value={listingText}
                 onChange={(e) => setListingText(e.target.value)}
                 placeholder="Paste the listing description here (optional)…"
                 rows={4}
-                className="w-full p-4 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 resize-none"
+                className="w-full p-4 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/30 resize-none transition-smooth"
               />
               <input
                 type="text"
                 value={listPrice}
                 onChange={(e) => setListPrice(e.target.value.replace(/[^0-9.]/g, ""))}
                 placeholder="List price (e.g. 1100000)"
-                className="w-full h-11 px-4 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-red-500/40"
+                className="w-full h-11 px-4 bg-white/[0.04] border border-white/10 rounded-xl text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/30 transition-smooth"
               />
             </div>
           )}
         </div>
 
         {/* Example properties */}
-        <div className="max-w-xl w-full mt-12">
+        <div className="max-w-xl w-full mt-12 animate-fade-in-up stagger-3">
           <p className="text-[10px] font-mono text-muted-foreground/40 uppercase tracking-[0.2em] text-center mb-4">
             Try an example
           </p>
@@ -192,10 +194,10 @@ export default function LandingPage() {
                 key={idx}
                 onClick={() => handleAnalyze(prop.address, prop.listingText, prop.listPrice)}
                 disabled={loading}
-                className="group text-left p-4 rounded-xl border border-white/8 bg-white/[0.02] hover:border-red-500/20 hover:bg-red-500/[0.02] transition-all duration-200"
+                className="group text-left p-4 rounded-xl border border-white/8 bg-white/[0.02] hover:border-red-500/20 hover:bg-red-500/[0.02] transition-smooth hover-lift disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-red-400" />
+                  <Zap className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform" />
                   <span className="text-xs font-mono font-semibold text-muted-foreground">
                     Click to analyze
                   </span>
@@ -205,7 +207,7 @@ export default function LandingPage() {
                   {prop.listingText?.slice(0, 100)}…
                 </p>
                 <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground/50 group-hover:text-red-400/60 transition-colors">
-                  <Zap className="w-3 h-3" />
+                  <Zap className="w-3 h-3 group-hover:animate-pulse" />
                   <span className="font-mono">Analyze this property</span>
                 </div>
               </button>
@@ -219,9 +221,13 @@ export default function LandingPage() {
             { icon: <FileWarning className="w-5 h-5 text-red-400" />, title: "Claim Extraction", desc: "Every listing claim is identified, categorized, and tagged with a verdict." },
             { icon: <Shield className="w-5 h-5 text-violet-400" />, title: "Evidence Cross-Check", desc: "Claims are compared against property records, comps, permits, and public data." },
             { icon: <AlertTriangle className="w-5 h-5 text-amber-400" />, title: "Buyer War Room", desc: "Get questions to ask, documents to request, and inspection priorities." },
-          ].map((f) => (
-            <div key={f.title} className="p-5 rounded-xl border border-white/5 bg-white/[0.01]">
-              <div className="mb-3">{f.icon}</div>
+          ].map((f, idx) => (
+            <div 
+              key={f.title} 
+              className={`p-5 rounded-xl border border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02] transition-smooth hover-lift animate-fade-in-up`}
+              style={{ animationDelay: `${0.4 + idx * 0.1}s` }}
+            >
+              <div className="mb-3 group-hover:scale-110 transition-transform">{f.icon}</div>
               <h3 className="font-display text-base text-foreground mb-1">{f.title}</h3>
               <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>

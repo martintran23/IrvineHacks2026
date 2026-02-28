@@ -85,7 +85,7 @@ export default function ResultsPage() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
       {/* Top: Trust Score + Summary */}
       <div className="flex flex-col md:flex-row gap-6 md:gap-10 mb-8">
         {/* Trust ring */}
@@ -182,10 +182,10 @@ export default function ResultsPage() {
           <button
             onClick={() => setActiveCategory("all")}
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-mono transition-all",
+              "px-3 py-1.5 rounded-md text-xs font-mono transition-smooth hover-lift",
               activeCategory === "all"
-                ? "bg-white/10 text-foreground"
-                : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]"
+                ? "bg-white/10 text-foreground border border-white/20"
+                : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] border border-transparent"
             )}
           >
             All ({claims.length})
@@ -198,10 +198,10 @@ export default function ResultsPage() {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-mono transition-all",
+                  "px-3 py-1.5 rounded-md text-xs font-mono transition-smooth hover-lift",
                   activeCategory === cat
-                    ? "bg-white/10 text-foreground"
-                    : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]"
+                    ? "bg-white/10 text-foreground border border-white/20"
+                    : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] border border-transparent"
                 )}
               >
                 {CATEGORY_LABELS[cat]} ({count})
@@ -212,32 +212,37 @@ export default function ResultsPage() {
 
         {/* Claim cards */}
         <div className="space-y-3">
-          {filteredClaims.map((claim: any) => (
-            <ClaimCard
+          {filteredClaims.map((claim: any, idx: number) => (
+            <div 
               key={claim.id}
-              category={claim.category}
-              statement={claim.statement}
-              source={claim.source}
-              verdict={claim.verdict}
-              confidence={claim.confidence}
-              explanation={claim.explanation}
-              severity={claim.severity}
-              evidence={claim.evidence || []}
-            />
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${idx * 0.05}s` }}
+            >
+              <ClaimCard
+                category={claim.category}
+                statement={claim.statement}
+                source={claim.source}
+                verdict={claim.verdict}
+                confidence={claim.confidence}
+                explanation={claim.explanation}
+                severity={claim.severity}
+                evidence={claim.evidence || []}
+              />
+            </div>
           ))}
         </div>
       </div>
 
       {/* CTA to war room */}
-      <div className="text-center py-8 border-t border-white/5">
+      <div className="text-center py-8 border-t border-white/5 animate-fade-in-up">
         <p className="text-muted-foreground text-sm mb-4">
           Ready to take action on these findings?
         </p>
-        <Link href={`/warroom/${data.id}`}>
-          <Button className="bg-red-500 hover:bg-red-600 text-white gap-2">
+        <Link href={`/warroom/${data.id}`} className="group inline-block">
+          <Button className="bg-red-500 hover:bg-red-600 text-white gap-2 transition-smooth hover-lift">
             <Shield className="w-4 h-4" />
             Enter Buyer War Room
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Button>
         </Link>
       </div>
