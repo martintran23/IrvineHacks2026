@@ -67,7 +67,7 @@ export default function LandingPage() {
             <span className="text-[10px] font-mono bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded border border-red-500/20">AI</span>
           </div>
           <p className="text-xs text-muted-foreground font-mono hidden sm:block">
-            Built for IrvineHacks 2025
+            Built for IrvineHacks 2026
           </p>
         </div>
       </nav>
@@ -221,7 +221,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-white/5 px-6 py-4">
         <div className="max-w-6xl mx-auto flex items-center justify-between text-[10px] text-muted-foreground/40 font-mono">
-          <span>DealBreakr AI © 2025</span>
+          <span>DealBreakr AI © 2026</span>
           <span>Disclaimer: Not legal or financial advice. Always consult professionals.</span>
         </div>
       </footer>
