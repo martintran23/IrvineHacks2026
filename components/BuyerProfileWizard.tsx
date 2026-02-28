@@ -136,8 +136,14 @@ export function BuyerProfileWizard({ onComplete, onSkip, initialProfile }: Wizar
       <div className="flex items-center justify-between mt-8 pt-4 border-t border-white/5">
         <Button
           variant="ghost"
-          onClick={prev}
-          disabled={step === 0}
+          onClick={() => {
+            if (step > 0) {
+              prev();
+              return;
+            }
+            onSkip?.();
+          }}
+          disabled={step === 0 && !onSkip}
           className="gap-2 text-muted-foreground"
         >
           <ArrowLeft className="w-4 h-4" /> Back

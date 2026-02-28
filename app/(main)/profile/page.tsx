@@ -20,17 +20,25 @@ import type { BuyerProfile } from "@/types/buyer-profile";
 export default function ProfilePage() {
   const router = useRouter();
 
+  function goBackWithFallback(fallback: string = "/") {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(fallback);
+  }
+
   function handleComplete(profile: BuyerProfile) {
     // Store in localStorage (hackathon approach — no extra DB needed)
     if (typeof window !== "undefined") {
       localStorage.setItem("dealbreakr_buyer_profile", JSON.stringify(profile));
     }
-    // Redirect back to home with a success param
-    router.push("/?profile=saved");
+    // Return users to where they came from; fallback to home.
+    goBackWithFallback("/?profile=saved");
   }
 
   function handleSkip() {
-    router.push("/");
+    goBackWithFallback("/");
   }
 
   // Load existing profile if any
