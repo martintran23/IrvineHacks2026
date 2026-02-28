@@ -9,7 +9,11 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildAnalysisPrompt } from "./prompts";
 import { getMockAnalysis } from "./mock-data";
-import type { ClaudeAnalysisResponse } from "@/types";
+import type {
+  ClaudeAnalysisResponse,
+  PropertySnapshot,
+  ComparableProperty,
+} from "@/types";
 
 // Initialize Anthropic client - check API key at startup
 const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -30,6 +34,8 @@ export async function analyzeProperty(params: {
   listingText?: string;
   listPrice?: number;
   propertyType?: string;
+  snapshotFromApi?: PropertySnapshot | null;
+  comparablesFromApi?: ComparableProperty[] | null;
 }): Promise<ClaudeAnalysisResponse> {
   // Fall back to mock data if no API key configured
   if (!anthropic || !apiKey) {

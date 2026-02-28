@@ -3,14 +3,18 @@
  *
  * All prompts request structured JSON output only.
  * We use a system prompt to set the role, then a user prompt
- * with the property details and listing text.
+ * with the property details, listing text, and any external data.
  *
  * IMPORTANT: We never make legal accusations or definitive fraud claims.
  * We use "unverified" when evidence is missing. We distinguish
  * facts, inferences, and marketing language.
  */
 
-import type { ScoringCategory } from "@/types";
+import type {
+  ScoringCategory,
+  PropertySnapshot,
+  ComparableProperty,
+} from "@/types";
 
 // ─── System prompt: sets Claude's role and output contract ─────────
 export const SYSTEM_PROMPT = `You are DealBreakr AI — a meticulous real-estate due-diligence analyst.
@@ -37,8 +41,26 @@ export function buildAnalysisPrompt(params: {
   listingText?: string;
   listPrice?: number;
   propertyType?: string;
+  snapshotFromApi?: PropertySnapshot | null;
+  comparablesFromApi?: ComparableProperty[] | null;
 }): string {
-  const { address, listingText, listPrice, propertyType } = params;
+  const {
+    address,
+    listingText,
+    listPrice,
+    propertyType,
+    snapshotFromApi,
+    comparablesFromApi,
+  } = params;
+
+  const snapshotJson = snapshotFromApi
+    ? JSON.stringify(snapshotFromApi, null, 2)
+    : "null";
+
+  const comparablesJson =
+    comparablesFromApi && comparablesFromApi.length
+      ? JSON.stringify(comparablesFromApi, null, 2)
+      : "[]";
 
   return `Analyze this property listing and return a JSON object.
 
@@ -48,13 +70,21 @@ ${listPrice ? `List Price: $${listPrice.toLocaleString()}` : "List Price: not pr
 ${propertyType ? `Property Type: ${propertyType}` : ""}
 ${listingText ? `\n## LISTING TEXT\n${listingText}` : "\nNo listing text provided — analyze based on address and public knowledge only."}
 
+## PUBLIC RECORDS (FROM EXTERNAL PROVIDER)
+Use the following data (from Realie or another external property data provider) as your primary ground truth when evaluating record_mismatch and pricing_anomaly. If fields are missing or obviously inconsistent, you may infer cautiously and mark confidence accordingly.
+
+propertySnapshotFromExternal = ${snapshotJson}
+
+comparablesFromExternal = ${comparablesJson}
+
 ## INSTRUCTIONS
-1. Generate a realistic property snapshot based on what you know or can infer about this address and area. If you don't have exact data, provide reasonable estimates and mark confidence accordingly.
-2. Provide market context with comparable properties.
-3. Extract every verifiable CLAIM from the listing text (or infer common claims if no text provided).
-4. For each claim, provide evidence items that support or contradict it.
-5. Generate action items for a buyer's due-diligence war room.
-6. Calculate a trust score (0–100).
+1. Start from the external property data above wherever it is present. Treat it as the most reliable source of facts.
+2. If external fields are missing, you may generate reasonable estimates and clearly reflect uncertainty via confidence scores.
+3. Provide market context with comparable properties (you may augment comparablesFromExternal with your own inferred comparables).
+4. Extract every verifiable CLAIM from the listing text (or infer common claims if no text provided).
+5. For each claim, provide evidence items that support or contradict it, explicitly referencing Estated data where relevant.
+6. Generate action items for a buyer's due-diligence war room.
+7. Calculate a trust score (0–100).
 
 ## REQUIRED JSON SCHEMA
 {

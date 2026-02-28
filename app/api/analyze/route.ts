@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeProperty } from "@/lib/claude";
 import { AnalyzeRequestSchema } from "@/types";
+import { fetchPropertyData } from "@/lib/property-data";
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,11 +37,21 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 2. Run Claude analysis (or mock fallback)
+    // 2. Fetch external property data (Realie) for ground truth
+    const realieData = await fetchPropertyData(address);
+
+    // 3. Run Claude analysis (or mock fallback)
     let result;
     try {
       console.log(`[API] Starting analysis for: ${address}`);
-      result = await analyzeProperty({ address, listingText, listPrice, propertyType });
+      result = await analyzeProperty({
+        address,
+        listingText,
+        listPrice,
+        propertyType,
+        snapshotFromApi: realieData.snapshot,
+        comparablesFromApi: realieData.comparables,
+      });
       console.log(`[API] Analysis complete - Trust Score: ${result.trustScore}, Claims: ${result.claims.length}`);
     } catch (err: any) {
       console.error(`[API] Analysis failed for ${address}:`, err);
