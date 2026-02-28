@@ -26,12 +26,12 @@ export function AnalysisLoading() {
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-4">
       {/* Animated scanner */}
       <div className="relative w-32 h-32 mb-8">
-        <div className="absolute inset-0 border-2 border-red-500/30 rounded-xl" />
+        <div className="absolute inset-0 border-2 border-cyan-300/35 rounded-xl" />
         <div className="absolute inset-0 overflow-hidden rounded-xl">
-          <div className="w-full h-1 bg-gradient-to-r from-transparent via-red-500 to-transparent animate-scan-line" />
+          <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-300 to-transparent animate-scan-line" />
         </div>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-4xl font-display font-bold text-red-400/80">DB</span>
+          <span className="text-4xl font-display font-bold text-cyan-200">DB</span>
         </div>
       </div>
 
@@ -49,8 +49,8 @@ export function AnalysisLoading() {
                 i < step
                   ? "text-emerald-400 bg-emerald-500/10"
                   : i === step
-                  ? "text-red-400 bg-red-500/10"
-                  : "text-muted-foreground bg-white/5"
+                  ? "text-cyan-300 bg-cyan-500/15"
+                  : "text-muted-foreground bg-slate-400/10"
               }`}
             >
               {i < step ? <CheckCircle2 className="w-5 h-5" /> : s.icon}
@@ -64,9 +64,9 @@ export function AnalysisLoading() {
             </span>
             {i === step && (
               <span className="ml-auto flex gap-1">
-                <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-                <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-                <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                <span className="w-1.5 h-1.5 bg-cyan-300 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <span className="w-1.5 h-1.5 bg-cyan-300 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <span className="w-1.5 h-1.5 bg-cyan-300 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
               </span>
             )}
           </div>

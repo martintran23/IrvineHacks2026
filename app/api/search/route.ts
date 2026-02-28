@@ -1,9 +1,9 @@
 /**
- * GET /api/search?address=... OR ?latitude=...&longitude=...
+ * GET /api/search?address=...
  *
  * Searches for properties using the Realie.ai API.
- * - If latitude & longitude are provided: search by location (user geolocation).
- * - Otherwise: geocode address then Realie Location Search, or Realie Property Search.
+ * Uses geocoding for lat/lon, then Realie Location Search; if that fails,
+ * parses the query and uses Realie Property Search (state/city/zip).
  * Requires REALIE_API_KEY; returns no mock data.
  */
 
@@ -12,36 +12,39 @@ import {
   searchByLocation,
   searchByQuery,
   parseAddressQuery,
+  type PropertySearchResult,
 } from "@/lib/property-data";
 
 /**
- * Geocode an address using Nominatim (OpenStreetMap) - free, no API key needed
+ * Geocode an address using Nominatim (OpenStreetMap) — free, no API key needed
  */
 async function geocodeAddress(
   address: string
 ): Promise<{ lat: number; lon: number } | null> {
   try {
     const encoded = encodeURIComponent(address);
+    console.log(`[Search] Geocoding: ${address}`);
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encoded}&limit=1`,
-      {
-        headers: {
-          "User-Agent": "DealBreakr-AI/1.0",
-        },
-      }
+      { headers: { "User-Agent": "DealBreakr-AI/1.0" } }
     );
 
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error("[Search] Nominatim error:", response.status);
+      return null;
+    }
 
     const data = await response.json();
-    if (data.length === 0) return null;
+    if (data.length === 0) {
+      console.warn("[Search] Nominatim found nothing for:", address);
+      return null;
+    }
 
-    return {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon),
-    };
+    const coords = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+    console.log(`[Search] Geocoded "${address}" → ${coords.lat}, ${coords.lon}`);
+    return coords;
   } catch (error) {
-    console.error("[geocodeAddress] Error:", error);
+    console.error("[Search] Geocode error:", error);
     return null;
   }
 }
@@ -50,89 +53,78 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const address = searchParams.get("address");
-    const latParam = searchParams.get("latitude");
-    const lonParam = searchParams.get("longitude");
-    const radius = parseFloat(searchParams.get("radius") || "1.5"); // default 1.5 miles (Realie max 2)
+    const radius = parseFloat(searchParams.get("radius") || "1.5");
+
+    if (!address || address.length < 3) {
+      return NextResponse.json(
+        { error: "Please provide a valid address or area", properties: [] },
+        { status: 400 }
+      );
+    }
 
     if (!process.env.REALIE_API_KEY) {
+      console.error("[Search] REALIE_API_KEY not configured");
       return NextResponse.json(
         {
-          error: "Property search is not configured. REALIE_API_KEY is required.",
+          error: "Property search not configured. REALIE_API_KEY required.",
           properties: [],
         },
         { status: 503 }
       );
     }
 
-    // 1) If user provided lat/lon (e.g. from geolocation), search by location directly
-    if (latParam != null && lonParam != null) {
-      const latitude = parseFloat(latParam);
-      const longitude = parseFloat(lonParam);
-      if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) {
-        const properties = await searchByLocation(
-          latitude,
-          longitude,
-          Math.min(Math.max(radius, 0.1), 2),
-          10
-        );
-        return NextResponse.json({
-          properties: properties.slice(0, 10),
-          center: { lat: latitude, lon: longitude },
-          source: "realie_location",
-        });
-      }
-    }
+    let properties: PropertySearchResult[] = [];
 
-    // 2) Address-based search: require address
-    if (!address || address.length < 3) {
-      return NextResponse.json(
-        { error: "Please provide an address or use your current location." },
-        { status: 400 }
-      );
-    }
-
-    // 3) Try geocode + Realie location search
+    // Strategy 1: Geocode → Realie location search (works for any input)
     const coords = await geocodeAddress(address);
     if (coords) {
-      const properties = await searchByLocation(
+      properties = await searchByLocation(
         coords.lat,
         coords.lon,
         Math.min(radius, 2),
-        10
+        20
       );
+      console.log(`[Search] Location search: ${properties.length} results`);
+    }
+
+    // Strategy 2: If location search got nothing, try query-based search
+    if (properties.length === 0) {
+      const parsed = parseAddressQuery(address);
+      if (parsed) {
+        console.log(`[Search] Trying query search:`, parsed);
+        properties = await searchByQuery({
+          state: parsed.state,
+          city: parsed.city,
+          zipCode: parsed.zipCode,
+          address: parsed.address,
+          limit: 20,
+        });
+        console.log(`[Search] Query search: ${properties.length} results`);
+      }
+    }
+
+    // Return results
+    if (properties.length > 0) {
       return NextResponse.json({
-        properties: properties.slice(0, 10),
-        center: {
-          address,
-          lat: coords.lat,
-          lon: coords.lon,
-        },
-        source: "realie_location",
+        properties: properties.slice(0, 15),
+        center: coords
+          ? { address, lat: coords.lat, lon: coords.lon }
+          : { address },
+        source: "realie",
+        total: properties.length,
       });
     }
 
-    // 4) Fallback: parse query and use Realie property search (state required)
-    const parsed = parseAddressQuery(address);
-    if (parsed) {
-      const properties = await searchByQuery({
-        state: parsed.state,
-        city: parsed.city,
-        zipCode: parsed.zipCode,
-        address: parsed.address,
-        limit: 10,
-      });
-      return NextResponse.json({
-        properties: properties.slice(0, 10),
-        center: { address },
-        source: "realie_search",
-      });
-    }
-
+    // Nothing found
     return NextResponse.json({
       properties: [],
-      center: { address },
-      source: "none",
-      message: "Could not geocode address or parse as city/state/ZIP. Try e.g. 'Irvine, CA' or '92618'.",
+      center: coords
+        ? { address, lat: coords.lat, lon: coords.lon }
+        : { address },
+      source: "realie",
+      message: coords
+        ? `No properties found near ${address}. Try a different location.`
+        : `Could not geocode "${address}". Try "City, State" or a ZIP code.`,
     });
   } catch (error) {
     console.error("[/api/search] Error:", error);

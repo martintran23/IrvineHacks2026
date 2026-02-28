@@ -19,12 +19,12 @@ export function PropertySnapshot({ snapshot, address, listPrice }: Props) {
     { icon: <TreePine className="w-4 h-4" />, label: "Lot", value: snapshot.lotSqft ? `${formatNumber(snapshot.lotSqft)} sqft` : "—" },
     { icon: <Calendar className="w-4 h-4" />, label: "Year Built", value: snapshot.yearBuilt ?? "—" },
     { icon: <Car className="w-4 h-4" />, label: "Garage", value: snapshot.garage ?? "—" },
-    { icon: <Building className="w-4 h-4" />, label: "HOA", value: snapshot.hoa ? `${formatCurrency(snapshot.hoa)}/mo` : "None" },
+    { icon: <Building className="w-4 h-4" />, label: "HOA", value: snapshot.hoa !== null ? `${formatCurrency(snapshot.hoa)}/mo` : "—" },
     { icon: <Landmark className="w-4 h-4" />, label: "Assessed", value: formatCurrency(snapshot.taxAssessedValue) },
   ];
 
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="cyber-panel">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -48,7 +48,7 @@ export function PropertySnapshot({ snapshot, address, listPrice }: Props) {
       <CardContent>
         <div className="grid grid-cols-4 gap-3">
           {stats.map((stat) => (
-            <div key={stat.label} className="flex flex-col items-center p-2 rounded-md bg-white/[0.03] border border-white/5">
+            <div key={stat.label} className="flex flex-col items-center p-2 rounded-md bg-cyan-500/[0.06] border border-cyan-300/15">
               <div className="text-muted-foreground mb-1">{stat.icon}</div>
               <p className="text-xs font-medium text-foreground">{stat.value}</p>
               <p className="text-[10px] text-muted-foreground">{stat.label}</p>
@@ -58,7 +58,7 @@ export function PropertySnapshot({ snapshot, address, listPrice }: Props) {
 
         {/* Last sale info */}
         {snapshot.lastSalePrice && (
-          <div className="mt-3 pt-3 border-t border-white/5 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-3 pt-3 border-t border-cyan-300/10 flex items-center justify-between text-xs text-muted-foreground">
             <span>Last Sold</span>
             <span className="font-mono">
               {formatCurrency(snapshot.lastSalePrice)} on {snapshot.lastSaleDate ?? "unknown"}

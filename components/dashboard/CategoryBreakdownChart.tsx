@@ -2,11 +2,10 @@
 
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CATEGORY_LABELS, type ScoringCategory } from "@/types";
-import { getCategoryChartColor } from "@/lib/utils";
 
 interface ClaimSummary {
   category: ScoringCategory;
@@ -40,7 +39,7 @@ export function CategoryBreakdownChart({ claims }: Props) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Radar */}
-      <Card className="border-white/10 bg-white/[0.02]">
+      <Card className="cyber-panel">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-mono tracking-wide text-muted-foreground">
             RISK RADAR
@@ -49,10 +48,10 @@ export function CategoryBreakdownChart({ claims }: Props) {
         <CardContent>
           <ResponsiveContainer width="100%" height={240}>
             <RadarChart data={radarData} margin={{ top: 10, right: 30, bottom: 10, left: 30 }}>
-              <PolarGrid stroke="rgba(255,255,255,0.06)" />
+              <PolarGrid stroke="rgba(109, 224, 255, 0.25)" />
               <PolarAngleAxis
                 dataKey="category"
-                tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }}
+                tick={{ fill: "rgba(209, 242, 255, 0.7)", fontSize: 10 }}
               />
               <PolarRadiusAxis
                 angle={30}
@@ -63,9 +62,9 @@ export function CategoryBreakdownChart({ claims }: Props) {
               <Radar
                 name="Risk"
                 dataKey="risk"
-                stroke="#ef4444"
-                fill="#ef4444"
-                fillOpacity={0.15}
+                stroke="#22d3ee"
+                fill="#22d3ee"
+                fillOpacity={0.2}
                 strokeWidth={2}
               />
             </RadarChart>
@@ -74,7 +73,7 @@ export function CategoryBreakdownChart({ claims }: Props) {
       </Card>
 
       {/* Stacked bar */}
-      <Card className="border-white/10 bg-white/[0.02]">
+      <Card className="cyber-panel">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-mono tracking-wide text-muted-foreground">
             CLAIM VERDICTS
@@ -85,19 +84,19 @@ export function CategoryBreakdownChart({ claims }: Props) {
             <BarChart data={barData} margin={{ top: 10, right: 10, bottom: 0, left: -20 }}>
               <XAxis
                 dataKey="name"
-                tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }}
+                tick={{ fill: "rgba(209, 242, 255, 0.5)", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 10 }}
+                tick={{ fill: "rgba(209, 242, 255, 0.4)", fontSize: 10 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
                 contentStyle={{
-                  background: "rgba(0,0,0,0.9)",
-                  border: "1px solid rgba(255,255,255,0.1)",
+                  background: "rgba(8, 16, 38, 0.95)",
+                  border: "1px solid rgba(103, 232, 249, 0.3)",
                   borderRadius: 8,
                   fontSize: 12,
                 }}
