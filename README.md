@@ -232,4 +232,4 @@ DealBreakr AI is a research and educational tool. It is **not** a licensed inspe
 
 ---
 
-Built with caffeine and conviction at **IrvineHacks 2025** ☕
+Built with caffeine and conviction at **IrvineHacks 2026** ☕
