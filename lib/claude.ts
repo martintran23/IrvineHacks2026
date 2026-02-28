@@ -25,6 +25,7 @@ export async function analyzeProperty(params: {
   propertyType?: string;
   snapshotFromApi?: PropertySnapshot | null;
   comparablesFromApi?: ComparableProperty[] | null;
+  buyerProfile?: any | null;
 }): Promise<ClaudeAnalysisResponse> {
   const apiKey = getApiKey();
 
@@ -41,7 +42,10 @@ export async function analyzeProperty(params: {
 
   const anthropic = new Anthropic({ apiKey });
 
-  const userPrompt = buildAnalysisPrompt(params);
+  const userPrompt = buildAnalysisPrompt({
+    ...params,
+    buyerProfile: params.buyerProfile || null,
+  });
 
   console.log("[DealBreakr] 🤖 Calling Claude API for:", params.address);
   console.log("[DealBreakr] 📝 Prompt length:", userPrompt.length, "characters");

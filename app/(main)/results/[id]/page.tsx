@@ -10,12 +10,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TrustScoreRing } from "@/components/dashboard/TrustScoreRing";
+import { FitScoreRing } from "@/components/dashboard/FitScoreRing";
+import { FitBreakdown } from "@/components/dashboard/FitBreakdown";
 import { PropertySnapshot } from "@/components/dashboard/PropertySnapshot";
 import { ClaimCard } from "@/components/dashboard/ClaimCard";
 import { CategoryBreakdownChart } from "@/components/dashboard/CategoryBreakdownChart";
 import { ComparablesTable } from "@/components/dashboard/ComparablesTable";
 import { AnalysisLoading } from "@/components/dashboard/AnalysisLoading";
 import { getTrustBg, cn } from "@/lib/utils";
+import { useBuyerProfile } from "@/lib/use-buyer-profile";
+import { computeFitScore } from "@/lib/fit-engine";
 import { CATEGORY_LABELS, SCORING_CATEGORIES, type ScoringCategory, type Verdict } from "@/types";
 
 export default function ResultsPage() {
@@ -25,6 +29,7 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeCategory, setActiveCategory] = useState<"all" | ScoringCategory>("all");
+  const { profile, hasProfile } = useBuyerProfile();
 
   useEffect(() => {
     async function fetchData() {
@@ -47,7 +52,7 @@ export default function ResultsPage() {
   if (error || !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+        <AlertTriangle className="w-12 h-12 text-cyan-300 mb-4" />
         <p className="text-muted-foreground">{error || "Something went wrong"}</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/")}>
           Try Another Property
@@ -84,13 +89,31 @@ export default function ResultsPage() {
     return b.confidence - a.confidence;
   });
 
+  // Compute fit score if profile exists
+  const fitResult = hasProfile && profile ? computeFitScore(profile, {
+    propertySnapshot: data.propertySnapshot,
+    marketContext: data.marketContext,
+    trustScore: data.trustScore,
+    trustLabel: data.trustLabel,
+    listPrice: data.listPrice,
+    claims: data.claims || [],
+    actionItems: data.actionItems || [],
+  }) : null;
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8 animate-fade-in">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* Top: Trust Score + Summary */}
-      <div className="flex flex-col md:flex-row gap-6 md:gap-10 mb-8">
-        {/* Trust ring */}
-        <div className="flex flex-col items-center shrink-0">
-          <TrustScoreRing score={data.trustScore} label={data.trustLabel} />
+      <div className="flex flex-col md:flex-row gap-6 md:gap-10 mb-8 cyber-panel rounded-2xl p-6">
+        {/* Trust ring and Fit ring side by side */}
+        <div className="flex flex-col md:flex-row items-center gap-6 shrink-0">
+          <div className="flex flex-col items-center">
+            <TrustScoreRing score={data.trustScore} label={data.trustLabel} />
+          </div>
+          {fitResult && (
+            <div className="flex flex-col items-center">
+              <FitScoreRing result={fitResult} />
+            </div>
+          )}
           <div className="flex items-center gap-3 mt-4">
             {(
               [
@@ -135,7 +158,7 @@ export default function ResultsPage() {
 
           {/* Quick link to war room */}
           <Link href={`/warroom/${data.id}`} className="inline-block mt-4">
-            <Button variant="outline" size="sm" className="gap-2 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10">
+            <Button variant="outline" size="sm" className="gap-2 text-xs border-cyan-300/30 text-cyan-200 hover:bg-cyan-300/10">
               <Eye className="w-3.5 h-3.5" />
               Open Buyer War Room
               <ArrowRight className="w-3.5 h-3.5" />
@@ -168,6 +191,25 @@ export default function ResultsPage() {
         </div>
       )}
 
+      {/* Fit Score Breakdown */}
+      {fitResult ? (
+        <div className="mb-8">
+          <h2 className="text-xl font-display text-foreground mb-4">Your Personal Fit</h2>
+          <FitBreakdown result={fitResult} />
+        </div>
+      ) : (
+        <div className="mb-8 cyber-panel rounded-xl p-6 text-center">
+          <p className="text-sm text-muted-foreground mb-3">
+            Create a buyer profile to see your personal fit score
+          </p>
+          <Link href="/profile">
+            <Button variant="outline" size="sm" className="gap-2 text-xs">
+              Create Profile
+            </Button>
+          </Link>
+        </div>
+      )}
+
       {/* Claims Board */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -182,10 +224,10 @@ export default function ResultsPage() {
           <button
             onClick={() => setActiveCategory("all")}
             className={cn(
-              "px-3 py-1.5 rounded-md text-xs font-mono transition-smooth hover-lift",
+              "px-3 py-1.5 rounded-md text-xs font-mono transition-all",
               activeCategory === "all"
-                ? "bg-white/10 text-foreground border border-white/20"
-                : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] border border-transparent"
+                ? "cyber-chip text-foreground"
+                : "bg-slate-400/[0.07] text-muted-foreground hover:bg-fuchsia-400/[0.12]"
             )}
           >
             All ({claims.length})
@@ -198,10 +240,10 @@ export default function ResultsPage() {
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-xs font-mono transition-smooth hover-lift",
+                  "px-3 py-1.5 rounded-md text-xs font-mono transition-all",
                   activeCategory === cat
-                    ? "bg-white/10 text-foreground border border-white/20"
-                    : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06] border border-transparent"
+                    ? "cyber-chip text-foreground"
+                    : "bg-slate-400/[0.07] text-muted-foreground hover:bg-fuchsia-400/[0.12]"
                 )}
               >
                 {CATEGORY_LABELS[cat]} ({count})
@@ -212,37 +254,32 @@ export default function ResultsPage() {
 
         {/* Claim cards */}
         <div className="space-y-3">
-          {filteredClaims.map((claim: any, idx: number) => (
-            <div 
+          {filteredClaims.map((claim: any) => (
+            <ClaimCard
               key={claim.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${idx * 0.05}s` }}
-            >
-              <ClaimCard
-                category={claim.category}
-                statement={claim.statement}
-                source={claim.source}
-                verdict={claim.verdict}
-                confidence={claim.confidence}
-                explanation={claim.explanation}
-                severity={claim.severity}
-                evidence={claim.evidence || []}
-              />
-            </div>
+              category={claim.category}
+              statement={claim.statement}
+              source={claim.source}
+              verdict={claim.verdict}
+              confidence={claim.confidence}
+              explanation={claim.explanation}
+              severity={claim.severity}
+              evidence={claim.evidence || []}
+            />
           ))}
         </div>
       </div>
 
       {/* CTA to war room */}
-      <div className="text-center py-8 border-t border-white/5 animate-fade-in-up">
+      <div className="text-center py-8 border-t border-cyan-300/10">
         <p className="text-muted-foreground text-sm mb-4">
           Ready to take action on these findings?
         </p>
-        <Link href={`/warroom/${data.id}`} className="group inline-block">
-          <Button className="bg-red-500 hover:bg-red-600 text-white gap-2 transition-smooth hover-lift">
+        <Link href={`/warroom/${data.id}`}>
+          <Button className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 hover:brightness-110 text-slate-950 gap-2 border border-cyan-200/40 cyber-glow">
             <Shield className="w-4 h-4" />
             Enter Buyer War Room
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
       </div>

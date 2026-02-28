@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, MapPin, Home, Loader2, X } from "lucide-react";
+import { Search, MapPin, Home, Loader2, X, Sparkles, Accessibility, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils";
+import { useBuyerProfile } from "@/lib/use-buyer-profile";
+import type { BuyerProfile } from "@/types/buyer-profile";
 
 interface PropertySearchResult {
   address: string;
@@ -24,6 +26,7 @@ interface PropertySearchProps {
 
 export function PropertySearch({ onSelectProperty, initialAddress = "", onAddressChange }: PropertySearchProps) {
   const [query, setQuery] = useState(initialAddress);
+  const { profile, hasProfile } = useBuyerProfile();
   
   // Sync with parent when initialAddress changes
   useEffect(() => {
@@ -66,14 +69,51 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
     searchTimeoutRef.current = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/search?address=${encodeURIComponent(query)}`);
+        // Include buyer profile in search if available
+        const searchParams = new URLSearchParams({
+          address: query,
+        });
+        if (hasProfile && profile) {
+          searchParams.set("buyerProfile", JSON.stringify(profile));
+        }
+        
+        const res = await fetch(`/api/search?${searchParams.toString()}`);
+        if (!res.ok) {
+          console.error(`[PropertySearch] Search failed: ${res.status} ${res.statusText}`);
+          const errorData = await res.json().catch(() => ({}));
+          console.error("[PropertySearch] Error details:", errorData);
+          setResults([]);
+          setShowResults(false);
+          return;
+        }
+        
         const data = await res.json();
-        if (data.properties) {
+        console.log("[PropertySearch] Search response:", { 
+          source: data.source, 
+          count: data.properties?.length || 0,
+          hasError: !!data.error 
+        });
+        
+        if (data.error) {
+          console.error("[PropertySearch] API returned error:", data.error, data.message);
+          setResults([]);
+          setShowResults(false);
+          return;
+        }
+        
+        if (data.properties && Array.isArray(data.properties)) {
+          console.log(`[PropertySearch] Found ${data.properties.length} properties from ${data.source || 'unknown'}`);
           setResults(data.properties);
           setShowResults(true);
+        } else {
+          console.warn("[PropertySearch] No properties in response:", data);
+          setResults([]);
+          setShowResults(false);
         }
       } catch (error) {
         console.error("Search error:", error);
+        setResults([]);
+        setShowResults(false);
       } finally {
         setLoading(false);
       }
@@ -125,8 +165,10 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
           }}
           onFocus={() => query.length >= 5 && results.length > 0 && setShowResults(true)}
           onKeyDown={handleKeyDown}
-          placeholder="Enter address or search area (e.g., 'Irvine, CA')…"
-          className="w-full h-14 pl-12 pr-12 bg-white/[0.04] border border-white/10 rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/40 transition-all"
+          placeholder={hasProfile && profile 
+            ? `Search properties matching your profile (${profile.budgetMin.toLocaleString()}-${profile.budgetMax.toLocaleString()})…`
+            : "Enter address or search area (e.g., 'Irvine, CA')…"}
+          className="w-full h-14 pl-12 pr-12 cyber-panel rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-cyan-300/40 focus:border-cyan-300/40 transition-all"
         />
         {query && (
           <button
@@ -149,8 +191,29 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
 
       {/* Search Results Dropdown */}
       {showResults && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl shadow-2xl max-h-[400px] overflow-y-auto">
+        <div className="absolute z-50 w-full mt-2 bg-[#070f24]/95 border border-cyan-300/25 rounded-xl shadow-2xl max-h-[400px] overflow-y-auto backdrop-blur-xl">
           <div className="p-2">
+            {/* Profile-aware header */}
+            {hasProfile && profile && (
+              <div className="px-3 py-2 mb-2 rounded-lg bg-emerald-400/10 border border-emerald-400/20">
+                <div className="flex items-center gap-2 text-xs text-emerald-300">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span className="font-mono">Filtered by your profile</span>
+                </div>
+                {profile.accessibilityNeeds.filter(n => n !== "none").length > 0 && (
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-400/70">
+                    <Accessibility className="w-3 h-3" />
+                    <span>Checking accessibility needs</span>
+                  </div>
+                )}
+                {profile.budgetMax > 0 && (
+                  <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-400/70">
+                    <DollarSign className="w-3 h-3" />
+                    <span>Budget: ${profile.budgetMin.toLocaleString()} - ${profile.budgetMax.toLocaleString()}</span>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="text-[10px] font-mono text-muted-foreground/60 px-3 py-2 uppercase tracking-wider">
               Found {results.length} properties nearby
             </div>
@@ -161,13 +224,13 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
                 onMouseEnter={() => setSelectedIndex(index)}
                 className={`w-full text-left p-3 rounded-lg transition-all ${
                   selectedIndex === index
-                    ? "bg-white/10 border border-red-500/20"
-                    : "bg-white/[0.02] border border-transparent hover:bg-white/[0.05]"
+                    ? "bg-cyan-500/10 border border-cyan-300/30"
+                    : "bg-white/[0.02] border border-transparent hover:bg-fuchsia-500/[0.08]"
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="mt-0.5 p-1.5 rounded-md bg-red-500/10 border border-red-500/20">
-                    <Home className="w-3.5 h-3.5 text-red-400" />
+                  <div className="mt-0.5 p-1.5 rounded-md bg-cyan-400/10 border border-cyan-300/20">
+                    <Home className="w-3.5 h-3.5 text-cyan-300" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">
@@ -175,8 +238,17 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
                     </p>
                     <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                       {property.listPrice && (
-                        <span className="text-xs font-mono text-red-400">
+                        <span className={`text-xs font-mono ${
+                          hasProfile && profile && property.listPrice >= profile.budgetMin && property.listPrice <= profile.budgetMax
+                            ? "text-emerald-300"
+                            : hasProfile && profile && property.listPrice <= profile.budgetStretch
+                            ? "text-amber-300"
+                            : "text-fuchsia-300"
+                        }`}>
                           {formatCurrency(property.listPrice)}
+                          {hasProfile && profile && property.listPrice >= profile.budgetMin && property.listPrice <= profile.budgetMax && (
+                            <span className="ml-1 text-[10px] text-emerald-400">✓ In budget</span>
+                          )}
                         </span>
                       )}
                       {property.beds && property.baths && (
@@ -210,10 +282,13 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
       )}
 
       {showResults && results.length === 0 && !loading && query.length >= 5 && (
-        <div className="absolute z-50 w-full mt-2 bg-[#0a0a0a] border border-white/10 rounded-xl p-4 text-center">
+        <div className="absolute z-50 w-full mt-2 bg-[#070f24]/95 border border-cyan-300/25 rounded-xl p-4 text-center backdrop-blur-xl">
           <p className="text-sm text-muted-foreground">No properties found nearby</p>
           <p className="text-xs text-muted-foreground/60 mt-1">
-            Try a different address or area
+            Try a different address or area (e.g., "Costa Mesa, CA" or "92618")
+          </p>
+          <p className="text-[10px] text-amber-400/60 mt-2 font-mono">
+            [DEBUG] Check browser console and server logs for details
           </p>
         </div>
       )}

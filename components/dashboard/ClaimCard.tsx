@@ -52,18 +52,18 @@ export function ClaimCard({
   return (
     <div
       className={cn(
-        "group border rounded-lg p-4 transition-smooth cursor-pointer hover-lift",
-        "hover:border-white/20 hover:bg-white/[0.02]",
-        severity === "critical" && "border-red-500/30 bg-red-500/[0.03]",
-        severity === "warning" && "border-amber-500/20",
+        "group border rounded-lg p-4 transition-all duration-200 cursor-pointer",
+        "hover:border-fuchsia-300/35 hover:bg-fuchsia-400/[0.06]",
+        severity === "critical" && "border-rose-400/40 bg-rose-500/[0.08]",
+        severity === "warning" && "border-amber-400/30",
         severity === "caution" && "border-yellow-500/10",
-        severity === "info" && "border-white/10",
+        severity === "info" && "border-cyan-300/20 bg-cyan-500/[0.04]",
       )}
       onClick={() => setExpanded(!expanded)}
     >
       {/* Header row */}
       <div className="flex items-start gap-3">
-        <div className={cn("mt-0.5 p-1.5 rounded-md bg-white/5", getSeverityColor(severity))}>
+        <div className={cn("mt-0.5 p-1.5 rounded-md bg-cyan-500/10 border border-cyan-300/15", getSeverityColor(severity))}>
           {CATEGORY_ICON[category]}
         </div>
 
@@ -90,7 +90,7 @@ export function ClaimCard({
 
       {/* Expanded details */}
       {expanded && (
-        <div className="mt-4 ml-10 space-y-3 animate-fade-in">
+        <div className="mt-4 ml-10 space-y-3 animate-fade-up" style={{ animationDuration: "0.2s" }}>
           {/* Explanation */}
           <p className="text-sm text-muted-foreground leading-relaxed">{explanation}</p>
 
@@ -106,16 +106,16 @@ export function ClaimCard({
                   className={cn(
                     "flex items-start gap-2 text-xs p-2 rounded-md border",
                     ev.type === "supports" && "border-emerald-500/20 bg-emerald-500/5",
-                    ev.type === "contradicts" && "border-red-500/20 bg-red-500/5",
-                    ev.type === "neutral" && "border-white/10 bg-white/[0.02]",
+                    ev.type === "contradicts" && "border-rose-400/25 bg-rose-500/10",
+                    ev.type === "neutral" && "border-cyan-300/15 bg-cyan-500/[0.06]",
                   )}
                 >
                   <span
                     className={cn(
                       "shrink-0 w-1.5 h-1.5 rounded-full mt-1.5",
                       ev.type === "supports" && "bg-emerald-400",
-                      ev.type === "contradicts" && "bg-red-400",
-                      ev.type === "neutral" && "bg-gray-400",
+                      ev.type === "contradicts" && "bg-rose-300",
+                      ev.type === "neutral" && "bg-cyan-300",
                     )}
                   />
                   <div className="flex-1">

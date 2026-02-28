@@ -15,6 +15,8 @@ import type {
   PropertySnapshot,
   ComparableProperty,
 } from "@/types";
+import type { BuyerProfile } from "@/types/buyer-profile";
+import { buildBuyerProfilePromptSection } from "./prompts-fit";
 
 // ─── System prompt: sets Claude's role and output contract ─────────
 export const SYSTEM_PROMPT = `You are DealBreakr AI — a meticulous real-estate due-diligence analyst.
@@ -43,6 +45,7 @@ export function buildAnalysisPrompt(params: {
   propertyType?: string;
   snapshotFromApi?: PropertySnapshot | null;
   comparablesFromApi?: ComparableProperty[] | null;
+  buyerProfile?: BuyerProfile | null;
 }): string {
   const {
     address,
@@ -51,6 +54,7 @@ export function buildAnalysisPrompt(params: {
     propertyType,
     snapshotFromApi,
     comparablesFromApi,
+    buyerProfile,
   } = params;
 
   const snapshotJson = snapshotFromApi
@@ -153,7 +157,9 @@ comparablesFromExternal = ${comparablesJson}
   ]
 }
 
-Generate 8-15 claims across all 6 scoring categories.
+${buildBuyerProfilePromptSection(buyerProfile)}
+
+Generate ${buyerProfile ? "10-18" : "8-15"} claims across all 6 scoring categories${buyerProfile ? ", including 2-3 claims specifically about buyer-property fit" : ""}.
 Generate 6-10 action items covering questions, documents, and inspections.
 Include 3-5 comparable properties.
 
