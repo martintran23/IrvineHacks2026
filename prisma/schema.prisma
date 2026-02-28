@@ -1,0 +1,78 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// Top-level analysis for a single property listing
+model PropertyAnalysis {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Input
+  address     String
+  listingText String? // raw listing copy pasted by user
+  listPrice   Float?
+  propertyType String? // SFR, condo, townhome, etc.
+
+  // Computed
+  trustScore      Float   @default(0) // 0–100
+  trustLabel      String  @default("pending") // high | medium | low | pending
+  overallVerdict  String  @default("Analysis pending")
+
+  // Snapshot fields (JSON stored as text in SQLite)
+  propertySnapshot String? // JSON: beds, baths, sqft, lot, year built, etc.
+  marketContext    String? // JSON: comps, median price, DOM, etc.
+
+  // Relations
+  claims      Claim[]
+  actionItems ActionItem[]
+
+  status String @default("pending") // pending | analyzing | complete | error
+}
+
+/// Individual claim extracted from the listing
+model Claim {
+  id         String @id @default(cuid())
+  analysisId String
+  analysis   PropertyAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  category    String // one of the 6 scoring categories
+  statement   String // the actual claim text
+  source      String // "listing" | "public_record" | "inference"
+  verdict     String // "verified" | "unverified" | "contradiction" | "marketing"
+  confidence  Float  // 0–1 confidence in our verdict
+  explanation String // why we reached this verdict
+  severity    String @default("info") // info | caution | warning | critical
+
+  evidence EvidenceItem[]
+}
+
+/// Supporting or contradicting evidence for a claim
+model EvidenceItem {
+  id      String @id @default(cuid())
+  claimId String
+  claim   Claim  @relation(fields: [claimId], references: [id], onDelete: Cascade)
+
+  type        String // "supports" | "contradicts" | "neutral"
+  source      String // where we found it: "county_records", "mls", "listing", "inference"
+  description String
+  dataPoint   String? // raw value if applicable
+}
+
+/// Buyer war room action items
+model ActionItem {
+  id         String @id @default(cuid())
+  analysisId String
+  analysis   PropertyAnalysis @relation(fields: [analysisId], references: [id], onDelete: Cascade)
+
+  category    String // "question" | "document" | "inspection"
+  priority    String // "critical" | "high" | "medium" | "low"
+  title       String
+  description String
+  relatedClaimIds String? // comma-separated claim IDs
+}
