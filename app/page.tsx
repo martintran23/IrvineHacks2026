@@ -6,8 +6,21 @@ import {
   Search, AlertTriangle, FileWarning, Shield, Zap, ArrowRight, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MOCK_PROPERTIES } from "@/lib/mock-data";
 import { PropertySearch } from "@/components/PropertySearch";
+
+// Static example addresses for "Try an example" — no mock analysis; clicking runs real analysis
+const EXAMPLE_PROPERTIES = [
+  {
+    address: "42 Shadowridge, Irvine, CA 92618",
+    listingText: "Beautiful 4BR/3BA home in Irvine. 2,450 sqft of living space.",
+    listPrice: 1100000,
+  },
+  {
+    address: "518 Jasmine Ave, Costa Mesa, CA 92627",
+    listingText: "Well-maintained 3BR/2BA in Costa Mesa. Move-in ready.",
+    listPrice: 1050000,
+  },
+];
 
 export default function LandingPage() {
   const router = useRouter();
@@ -39,10 +52,16 @@ export default function LandingPage() {
         }),
       });
 
-      const data = await res.json();
+      let data: { error?: string; details?: string; id?: string };
+      try {
+        data = await res.json();
+      } catch {
+        data = { error: res.status === 500 ? "Server error" : "Request failed" };
+      }
 
       if (!res.ok) {
-        setError(data.error || "Analysis failed");
+        const message = data.details ?? data.error ?? "Analysis failed";
+        setError(typeof message === "string" ? message : "Analysis failed");
         setLoading(false);
         return;
       }
@@ -168,25 +187,17 @@ export default function LandingPage() {
             Try an example
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {Object.entries(MOCK_PROPERTIES).map(([key, prop]) => (
+            {EXAMPLE_PROPERTIES.map((prop, idx) => (
               <button
-                key={key}
+                key={idx}
                 onClick={() => handleAnalyze(prop.address, prop.listingText, prop.listPrice)}
                 disabled={loading}
                 className="group text-left p-4 rounded-xl border border-white/8 bg-white/[0.02] hover:border-red-500/20 hover:bg-red-500/[0.02] transition-all duration-200"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  {prop.analysis.trustLabel === "low" ? (
-                    <FileWarning className="w-4 h-4 text-red-400" />
-                  ) : (
-                    <Shield className="w-4 h-4 text-emerald-400" />
-                  )}
-                  <span
-                    className={`text-xs font-mono font-semibold ${
-                      prop.analysis.trustLabel === "low" ? "text-red-400" : "text-emerald-400"
-                    }`}
-                  >
-                    Trust: {prop.analysis.trustScore}
+                  <Zap className="w-4 h-4 text-red-400" />
+                  <span className="text-xs font-mono font-semibold text-muted-foreground">
+                    Click to analyze
                   </span>
                 </div>
                 <p className="text-sm text-foreground font-medium">{prop.address}</p>

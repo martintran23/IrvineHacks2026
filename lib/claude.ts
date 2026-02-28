@@ -2,31 +2,20 @@
  * Claude API client for DealBreakr AI
  *
  * Handles communication with the Anthropic API and parses
- * structured JSON responses. Falls back to mock data when
- * the API key is not set (for demo / hackathon purposes).
+ * structured JSON responses. Requires ANTHROPIC_API_KEY; no mock fallback.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT, buildAnalysisPrompt } from "./prompts";
-import { getMockAnalysis } from "./mock-data";
 import type {
   ClaudeAnalysisResponse,
   PropertySnapshot,
   ComparableProperty,
 } from "@/types";
 
-// Initialize Anthropic client - check API key at startup
-const apiKey = process.env.ANTHROPIC_API_KEY;
-const anthropic = apiKey ? new Anthropic({ apiKey }) : null;
-
-if (apiKey) {
-  console.log("[DealBreakr] ✅ Anthropic API key found - using Claude API");
-  // Verify API key format
-  if (!apiKey.startsWith("sk-ant-")) {
-    console.warn("[DealBreakr] ⚠️  API key format looks incorrect");
-  }
-} else {
-  console.log("[DealBreakr] ⚠️  No ANTHROPIC_API_KEY found - will use mock data");
+function getApiKey(): string {
+  const raw = process.env.ANTHROPIC_API_KEY ?? "";
+  return raw.trim();
 }
 
 export async function analyzeProperty(params: {
@@ -37,13 +26,20 @@ export async function analyzeProperty(params: {
   snapshotFromApi?: PropertySnapshot | null;
   comparablesFromApi?: ComparableProperty[] | null;
 }): Promise<ClaudeAnalysisResponse> {
-  // Fall back to mock data if no API key configured
-  if (!anthropic || !apiKey) {
-    console.log("[DealBreakr] No API key — using mock data");
-    // Simulate analysis delay
-    await new Promise((r) => setTimeout(r, 1500));
-    return getMockAnalysis(params.address);
+  const apiKey = getApiKey();
+
+  if (!apiKey) {
+    throw new Error(
+      "ANTHROPIC_API_KEY is required for analysis. Add it to your .env file and restart the server."
+    );
   }
+  if (!apiKey.startsWith("sk-ant-")) {
+    throw new Error(
+      "ANTHROPIC_API_KEY must start with sk-ant- (get a key at https://console.anthropic.com). You may have set the Realie key by mistake."
+    );
+  }
+
+  const anthropic = new Anthropic({ apiKey });
 
   const userPrompt = buildAnalysisPrompt(params);
 
@@ -54,7 +50,7 @@ export async function analyzeProperty(params: {
     const startTime = Date.now();
     
     const message = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022", // Updated to current stable model
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 8192,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
@@ -97,8 +93,7 @@ export async function analyzeProperty(params: {
     return parsed;
   } catch (error: any) {
     console.error("[DealBreakr] ❌ Claude API error:", error);
-    
-    // Log specific error details
+
     if (error.status === 401) {
       console.error("[DealBreakr] ❌ Authentication failed - check your API key");
     } else if (error.status === 429) {
@@ -106,9 +101,7 @@ export async function analyzeProperty(params: {
     } else if (error.status === 400) {
       console.error("[DealBreakr] ❌ Bad request - check prompt format");
     }
-    
-    // On API failure, fall back to mock data so the demo still works
-    console.log("[DealBreakr] 🔄 Falling back to mock data");
-    return getMockAnalysis(params.address);
+
+    throw error;
   }
 }

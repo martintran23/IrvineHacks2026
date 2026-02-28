@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // 2. Fetch external property data (Realie) for ground truth
     const realieData = await fetchPropertyData(address);
 
-    // 3. Run Claude analysis (or mock fallback)
+    // 3. Run Claude analysis (requires ANTHROPIC_API_KEY; uses Realie data for ground truth)
     let result;
     try {
       console.log(`[API] Starting analysis for: ${address}`);
@@ -54,16 +54,21 @@ export async function POST(request: NextRequest) {
       });
       console.log(`[API] Analysis complete - Trust Score: ${result.trustScore}, Claims: ${result.claims.length}`);
     } catch (err: any) {
+      const message =
+        err?.message ??
+        err?.error?.message ??
+        (typeof err?.error === "string" ? err.error : null) ??
+        "Unknown error";
       console.error(`[API] Analysis failed for ${address}:`, err);
       await prisma.propertyAnalysis.update({
         where: { id: analysis.id },
-        data: { 
-          status: "error", 
-          overallVerdict: `Analysis failed: ${err.message || "Unknown error"}` 
+        data: {
+          status: "error",
+          overallVerdict: `Analysis failed: ${message}`,
         },
       });
       return NextResponse.json(
-        { error: "Analysis failed", details: err.message, id: analysis.id },
+        { error: "Analysis failed", details: message, id: analysis.id },
         { status: 500 }
       );
     }
