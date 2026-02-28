@@ -2,7 +2,7 @@
 
 **Cross-examine any listing before you trust it.**
 
-DealBreakr AI is an AI-powered real estate due diligence tool built for IrvineHacks 2025. It extracts every claim from a property listing, cross-references against public records and market data, identifies contradictions and unknowns, and generates a buyer war room with questions, documents to request, and inspection priorities.
+DealBreakr AI is an AI-powered real estate due diligence tool built for IrvineHacks 2026. It extracts every claim from a property listing, cross-references against public records and market data, identifies contradictions and unknowns, and generates a buyer war room with questions, documents to request, and inspection priorities.
 
 ![Stack](https://img.shields.io/badge/Next.js_14-black?style=flat&logo=next.js) ![TypeScript](https://img.shields.io/badge/TypeScript-blue?style=flat&logo=typescript&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind_CSS-06B6D4?style=flat&logo=tailwindcss&logoColor=white) ![Claude](https://img.shields.io/badge/Claude_AI-D4A574?style=flat)
 
@@ -40,7 +40,7 @@ DealBreakr AI is an AI-powered real estate due diligence tool built for IrvineHa
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-team/dealbreakr-ai.git
+git clone https://github.com/your-username/IrvineHacks2026.git
 cd dealbreakr-ai
 npm install
 ```
