@@ -5,8 +5,10 @@
 import type { PropertySnapshot, ComparableProperty } from "@/types";
 
 const REALIE_API_KEY = process.env.REALIE_API_KEY;
-const REALIE_BASE_URL =
-  process.env.REALIE_BASE_URL || "https://app.realie.ai/api";
+const REALIE_BASE_URL = (() => {
+  const base = process.env.REALIE_BASE_URL || "https://app.realie.ai/api";
+  return base.endsWith("/") ? base : `${base}/`;
+})();
 
 // Minimal shape for Realie Address Lookup
 interface RealieAddressResponse {
@@ -91,12 +93,10 @@ export async function fetchPropertyData(
     return { snapshot: null, comparables: [], raw: null };
   }
 
-  const url = new URL("/public/property/address/", REALIE_BASE_URL);
+  const url = new URL("public/property/address/", REALIE_BASE_URL);
   url.searchParams.set("state", parsed.state);
   url.searchParams.set("address", parsed.street);
-  if (parsed.city) {
-    url.searchParams.set("city", parsed.city);
-  }
+  // Realie requires county when city is provided; omit city to avoid 400
 
   try {
     const res = await fetch(url.toString(), {
@@ -123,25 +123,33 @@ export async function fetchPropertyData(
       return { snapshot: null, comparables: [], raw: data };
     }
 
-    // Field names from Realie Property Data Schema
+    const num = (v: any): number | null => {
+      if (v == null || v === "") return null;
+      if (typeof v === "number") return Number.isNaN(v) ? null : v;
+      const n = Number(v);
+      return Number.isNaN(n) ? null : n;
+    };
+    const str = (v: any): string | null =>
+      v == null || v === "" ? null : String(v);
+
+    // Map Realie fields with alternate names so snapshot populates (beds, baths, sqft, lot, garage, hoa, assessed)
     const snapshot: PropertySnapshot = {
-      beds: prop.totalBedrooms ?? null,
-      baths: prop.totalBathrooms ?? null,
-      sqft: prop.buildingArea ?? null,
-      lotSqft: prop.landArea ?? null,
-      yearBuilt: prop.yearBuilt ?? null,
-      stories: prop.stories ?? null,
-      garage: prop.garageType ?? null,
-      hoa: null,
-      zoning: prop.zoningCode ?? null,
-      taxAssessedValue:
-        prop.totalMarketValue ?? prop.totalAssessedValue ?? null,
+      beds: num(prop.totalBedrooms) ?? num(prop.bedrooms) ?? null,
+      baths: num(prop.totalBathrooms) ?? num(prop.bathrooms) ?? null,
+      sqft: num(prop.buildingArea) ?? num(prop.livingArea) ?? null,
+      lotSqft: num(prop.landArea) ?? num(prop.lotSize) ?? null,
+      yearBuilt: num(prop.yearBuilt) ?? null,
+      stories: num(prop.stories) ?? null,
+      garage: str(prop.garageType) ?? (num(prop.garageCount) != null ? `${num(prop.garageCount)}-car` : null),
+      hoa: num(prop.hoaAmount) ?? num(prop.hoa) ?? null,
+      zoning: str(prop.zoningCode) ?? str(prop.zoning) ?? null,
+      taxAssessedValue: num(prop.totalAssessedValue) ?? num(prop.totalMarketValue) ?? num(prop.assessedValue) ?? null,
       lastSaleDate:
-        prop.transferDateObject ??
-        prop.transferDate ??
-        prop.recordingDate ??
+        str(prop.transferDateObject) ??
+        str(prop.transferDate) ??
+        str(prop.recordingDate) ??
         null,
-      lastSalePrice: prop.transferPrice ?? null,
+      lastSalePrice: num(prop.transferPrice) ?? null,
     };
 
     return {
@@ -193,7 +201,7 @@ export async function searchByLocation(
     return [];
   }
   const radius = Math.min(Math.max(radiusMiles, 0.1), 2); // Realie max 2 miles
-  const url = new URL("/public/property/location/", REALIE_BASE_URL);
+  const url = new URL("public/property/location/", REALIE_BASE_URL);
   url.searchParams.set("latitude", String(latitude));
   url.searchParams.set("longitude", String(longitude));
   url.searchParams.set("radius", String(radius));
@@ -237,7 +245,7 @@ export async function searchByQuery(params: {
     return [];
   }
   const { state, city, zipCode, address, limit = 10 } = params;
-  const url = new URL("/public/property/search/", REALIE_BASE_URL);
+  const url = new URL("public/property/search/", REALIE_BASE_URL);
   url.searchParams.set("state", state.trim().toUpperCase().slice(0, 2));
   if (city) url.searchParams.set("city", city.trim());
   if (zipCode) url.searchParams.set("zipCode", zipCode.replace(/\D/g, "").slice(0, 5));

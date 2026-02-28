@@ -82,8 +82,8 @@ export function getSeverityBg(severity: Severity): string {
 }
 
 // ─── Format helpers ────────────────────────────────────────────────
-export function formatCurrency(value: number | null): string {
-  if (value === null) return "—";
+export function formatCurrency(value: number | null | undefined): string {
+  if (value == null || typeof value !== "number" || Number.isNaN(value)) return "—";
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
@@ -91,8 +91,8 @@ export function formatCurrency(value: number | null): string {
   }).format(value);
 }
 
-export function formatNumber(value: number | null): string {
-  if (value === null) return "—";
+export function formatNumber(value: number | null | undefined): string {
+  if (value == null || typeof value !== "number" || Number.isNaN(value)) return "—";
   return new Intl.NumberFormat("en-US").format(value);
 }
 
