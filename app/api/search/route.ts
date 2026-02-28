@@ -1,9 +1,9 @@
 /**
- * GET /api/search?address=...
+ * GET /api/search?address=... OR ?latitude=...&longitude=...
  *
  * Searches for properties using the Realie.ai API.
- * Uses geocoding for lat/lon, then Realie Location Search; if that fails,
- * parses the query and uses Realie Property Search (state/city/zip).
+ * - If latitude & longitude are provided: search by location (e.g. "Use my location").
+ * - Otherwise: geocode address, then Realie Location Search or Property Search.
  * Requires REALIE_API_KEY; returns no mock data.
  */
 
@@ -53,14 +53,9 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const address = searchParams.get("address");
+    const latParam = searchParams.get("latitude");
+    const lonParam = searchParams.get("longitude");
     const radius = parseFloat(searchParams.get("radius") || "1.5");
-
-    if (!address || address.length < 3) {
-      return NextResponse.json(
-        { error: "Please provide a valid address or area", properties: [] },
-        { status: 400 }
-      );
-    }
 
     if (!process.env.REALIE_API_KEY) {
       console.error("[Search] REALIE_API_KEY not configured");
@@ -73,10 +68,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let properties: PropertySearchResult[] = [];
+    // If user provided lat/lon (e.g. from "Use my location"), search by location directly
+    if (latParam != null && lonParam != null) {
+      const latitude = parseFloat(latParam);
+      const longitude = parseFloat(lonParam);
+      if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) {
+        const properties = await searchByLocation(
+          latitude,
+          longitude,
+          Math.min(Math.max(radius, 0.1), 2),
+          20
+        );
+        console.log(`[Search] Location search (lat/lon): ${properties.length} results`);
+        return NextResponse.json({
+          properties: properties.slice(0, 15),
+          center: { lat: latitude, lon: longitude },
+          source: "realie",
+          total: properties.length,
+        });
+      }
+    }
 
-    // Strategy 1: Geocode → Realie location search (works for any input)
-    const coords = await geocodeAddress(address);
+    // Address-based search
+    if (!address || address.length < 3) {
+      return NextResponse.json(
+        { error: "Please provide an address or use your current location.", properties: [] },
+        { status: 400 }
+      );
+    }
+
+    let properties: PropertySearchResult[] = [];
+    let coords: { lat: number; lon: number } | null = null;
+
+    // Strategy 1: Geocode → Realie location search
+    coords = await geocodeAddress(address);
     if (coords) {
       properties = await searchByLocation(
         coords.lat,

@@ -10,7 +10,6 @@ import { prisma } from "@/lib/prisma";
 import { analyzeProperty } from "@/lib/claude";
 import { AnalyzeRequestSchema, type PropertySnapshot } from "@/types";
 import { fetchPropertyData } from "@/lib/property-data";
-import { scrapeZillowListing } from "@/lib/zillow-scraper";
 
 /**
  * Merge Claude's inferred snapshot with Realie's ground truth.
@@ -55,7 +54,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { address, listingText, listPrice, propertyType } = parsed.data;
-    
+
     // Extract buyer profile (optional, not in Zod schema)
     const buyerProfile = body.buyerProfile || null;
 
@@ -72,58 +71,33 @@ export async function POST(request: NextRequest) {
 
     // 2. Fetch external property data (Realie) for ground truth
     const realieData = await fetchPropertyData(address);
-    console.log(`[API] Realie data fetched: snapshot=${!!realieData.snapshot}, estimatedValue=${realieData.estimatedValue}, type=${realieData.propertyType}`);
+    console.log(
+      `[API] Realie data fetched: snapshot=${!!realieData.snapshot}, comparables=${realieData.comparables?.length ?? 0}`
+    );
 
-<<<<<<< HEAD
-    // 3. Scrape Zillow for listing price and snippet (may be blocked or fail)
-    const zillowResult = await scrapeZillowListing(address);
-    const zillowData =
-      zillowResult.status === "ok" && (zillowResult.listPrice ?? zillowResult.listingText)
-        ? {
-            listPrice: zillowResult.listPrice ?? undefined,
-            listingText: zillowResult.listingText ?? undefined,
-            zillowUrl: zillowResult.zillowUrl ?? undefined,
-          }
-        : null;
-    if (zillowResult.status === "blocked") {
-      console.log("[API] Zillow unavailable (blocked/rate-limited). Using Realie + user list price.");
-    }
-
-    // Effective price: user > Zillow scraped > Realie last sale
+    // Effective list price: user > Realie last sale. Property type: user input only (Realie doesn't return it on address lookup).
     const effectiveListPrice =
-      listPrice ?? zillowData?.listPrice ?? realieData.snapshot?.lastSalePrice ?? null;
-    const effectiveListingText = listingText ?? zillowData?.listingText ?? undefined;
-
-    // 4. Run Claude analysis (Realie + Zillow scraped data)
-=======
-    // 2b. Use Realie estimated value as listPrice if user didn't provide one
-    const effectiveListPrice = listPrice ?? realieData.estimatedValue ?? null;
-    const effectivePropertyType = propertyType ?? realieData.propertyType ?? null;
+      listPrice ?? realieData.snapshot?.lastSalePrice ?? null;
+    const effectivePropertyType = propertyType ?? undefined;
 
     // 3. Run Claude analysis
->>>>>>> origin/fix/fit-score-and-snapshot-data
     let result;
     try {
-      console.log(`[API] Starting analysis for: ${address} (price: ${effectiveListPrice}, type: ${effectivePropertyType})`);
+      console.log(
+        `[API] Starting analysis for: ${address} (price: ${effectiveListPrice}, type: ${effectivePropertyType})`
+      );
       result = await analyzeProperty({
         address,
-<<<<<<< HEAD
-        listingText: effectiveListingText,
+        listingText: listingText ?? undefined,
         listPrice: effectiveListPrice ?? undefined,
-        propertyType,
-        snapshotFromApi: realieData.snapshot,
-        comparablesFromApi: realieData.comparables,
-        zillowScraped: zillowData,
-=======
-        listingText,
-        listPrice: effectiveListPrice ?? undefined,
-        propertyType: effectivePropertyType ?? undefined,
+        propertyType: effectivePropertyType,
         snapshotFromApi: realieData.snapshot,
         comparablesFromApi: realieData.comparables,
         buyerProfile,
->>>>>>> origin/fix/fit-score-and-snapshot-data
       });
-      console.log(`[API] Analysis complete — Trust: ${result.trustScore}, Claims: ${result.claims.length}`);
+      console.log(
+        `[API] Analysis complete — Trust: ${result.trustScore}, Claims: ${result.claims.length}`
+      );
     } catch (err: any) {
       const message =
         err?.message ??
@@ -144,13 +118,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-<<<<<<< HEAD
-=======
     // 4. Merge Realie ground truth with Claude's inferred snapshot
-    const mergedSnapshot = mergeSnapshots(realieData.snapshot, result.propertySnapshot);
+    const mergedSnapshot = mergeSnapshots(
+      realieData.snapshot,
+      result.propertySnapshot
+    );
     console.log("[API] Merged snapshot:", JSON.stringify(mergedSnapshot));
 
->>>>>>> origin/fix/fit-score-and-snapshot-data
     // 5. Persist all results in a transaction
     await prisma.$transaction(async (tx) => {
       await tx.propertyAnalysis.update({
@@ -161,11 +135,12 @@ export async function POST(request: NextRequest) {
           overallVerdict: result.overallVerdict,
           propertySnapshot: JSON.stringify(mergedSnapshot),
           marketContext: JSON.stringify(result.marketContext),
-          listPrice: effectiveListPrice,
-          propertyType: effectivePropertyType,
           status: "complete",
           ...(effectiveListPrice != null && { listPrice: effectiveListPrice }),
-          ...(effectiveListingText != null && { listingText: effectiveListingText }),
+          ...(effectivePropertyType != null && {
+            propertyType: effectivePropertyType,
+          }),
+          ...(listingText != null && { listingText }),
         },
       });
 

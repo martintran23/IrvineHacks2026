@@ -25,7 +25,7 @@ export async function analyzeProperty(params: {
   propertyType?: string;
   snapshotFromApi?: PropertySnapshot | null;
   comparablesFromApi?: ComparableProperty[] | null;
-  zillowScraped?: { listPrice?: number | null; listingText?: string | null; zillowUrl?: string | null } | null;
+  buyerProfile?: unknown;
 }): Promise<ClaudeAnalysisResponse> {
   const apiKey = getApiKey();
 

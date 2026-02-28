@@ -36,6 +36,8 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
   }, [initialAddress]);
   const [results, setResults] = useState<PropertySearchResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
@@ -53,11 +55,71 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Search for properties when query changes
-  useEffect(() => {
-    if (query.length < 5) {
+  async function searchByCoords(latitude: number, longitude: number) {
+    setLocationError(null);
+    setLoading(true);
+    try {
+      const params = new URLSearchParams({
+        latitude: String(latitude),
+        longitude: String(longitude),
+        radius: "1.5",
+      });
+      if (hasProfile && profile) {
+        params.set("buyerProfile", JSON.stringify(profile));
+      }
+      const res = await fetch(`/api/search?${params.toString()}`);
+      const data = await res.json();
+      if (data.properties && Array.isArray(data.properties)) {
+        setResults(data.properties);
+        setShowResults(true);
+        setQuery("Near my location");
+        onAddressChange?.("Near my location");
+      } else {
+        setResults([]);
+        setLocationError(data.message || "No properties found nearby.");
+      }
+    } catch (err) {
+      console.error("Location search error:", err);
+      setLocationError("Search failed. Try again.");
       setResults([]);
-      setShowResults(false);
+    } finally {
+      setLoading(false);
+      setLocationLoading(false);
+    }
+  }
+
+  function handleUseMyLocation() {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setLocationError(null);
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        searchByCoords(position.coords.latitude, position.coords.longitude);
+      },
+      (err) => {
+        setLocationLoading(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationError("Location access denied. Enable it in your browser to search nearby.");
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocationError("Location unavailable. Try an address search instead.");
+        } else {
+          setLocationError("Could not get your location. Try again.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+    );
+  }
+
+  // Search for properties when query changes (skip when "Near my location" from geolocation)
+  useEffect(() => {
+    if (query.length < 5 || query === "Near my location") {
+      if (query !== "Near my location") {
+        setResults([]);
+        setShowResults(false);
+      }
       return;
     }
 
@@ -161,6 +223,7 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
             const newValue = e.target.value;
             setQuery(newValue);
             setSelectedIndex(-1);
+            setLocationError(null);
             onAddressChange?.(newValue);
           }}
           onFocus={() => query.length >= 5 && results.length > 0 && setShowResults(true)}
@@ -168,26 +231,44 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
           placeholder={hasProfile && profile 
             ? `Search properties matching your profile (${profile.budgetMin.toLocaleString()}-${profile.budgetMax.toLocaleString()})…`
             : "Enter address or search area (e.g., 'Irvine, CA')…"}
-          className="w-full h-14 pl-12 pr-12 cyber-panel rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-cyan-300/40 focus:border-cyan-300/40 transition-all"
+          className="w-full h-14 pl-12 pr-24 cyber-panel rounded-xl text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-cyan-300/40 focus:border-cyan-300/40 transition-all"
         />
+        <button
+          type="button"
+          onClick={handleUseMyLocation}
+          disabled={loading || locationLoading}
+          title="Use my location"
+          className="absolute right-10 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-muted-foreground hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors disabled:opacity-50"
+        >
+          {locationLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <MapPin className="w-4 h-4" />
+          )}
+        </button>
         {query && (
           <button
             onClick={() => {
               setQuery("");
               setResults([]);
               setShowResults(false);
+              setLocationError(null);
             }}
             className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
         )}
-        {loading && (
+        {loading && !locationLoading && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">
             <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
           </div>
         )}
       </div>
+
+      {locationError && (
+        <p className="text-xs text-amber-400 mt-2 font-mono">{locationError}</p>
+      )}
 
       {/* Search Results Dropdown */}
       {showResults && results.length > 0 && (
@@ -281,7 +362,7 @@ export function PropertySearch({ onSelectProperty, initialAddress = "", onAddres
         </div>
       )}
 
-      {showResults && results.length === 0 && !loading && query.length >= 5 && (
+      {showResults && results.length === 0 && !loading && !locationLoading && (query.length >= 5 || query === "Near my location") && (
         <div className="absolute z-50 w-full mt-2 bg-[#070f24]/95 border border-cyan-300/25 rounded-xl p-4 text-center backdrop-blur-xl">
           <p className="text-sm text-muted-foreground">No properties found nearby</p>
           <p className="text-xs text-muted-foreground/60 mt-1">
