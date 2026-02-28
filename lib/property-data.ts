@@ -123,7 +123,7 @@ export async function fetchPropertyData(
       return { snapshot: null, comparables: [], raw: data };
     }
 
-    // Field names based on Realie Property Data Schema docs
+    // Field names from Realie Property Data Schema
     const snapshot: PropertySnapshot = {
       beds: prop.totalBedrooms ?? null,
       baths: prop.totalBathrooms ?? null,
@@ -134,11 +134,12 @@ export async function fetchPropertyData(
       garage: prop.garageType ?? null,
       hoa: null,
       zoning: prop.zoningCode ?? null,
-      taxAssessedValue: prop.mostRecentAssessedMarketValue ?? null,
+      taxAssessedValue:
+        prop.totalMarketValue ?? prop.totalAssessedValue ?? null,
       lastSaleDate:
-        prop.transferDateObject ||
-        prop.transferDate ||
-        prop.recordingDate ||
+        prop.transferDateObject ??
+        prop.transferDate ??
+        prop.recordingDate ??
         null,
       lastSalePrice: prop.transferPrice ?? null,
     };
@@ -154,26 +155,26 @@ export async function fetchPropertyData(
   }
 }
 
-/** Build a single-line address from Realie property object */
+/** Build a single-line address from Realie property object (schema: address, addressFull, city, state, zipCode) */
 function formatPropertyAddress(p: any): string {
-  const line1 = p.addressLine1 ?? p.streetAddress ?? p.street ?? p.address ?? "";
+  const line1 = p.addressFull ?? p.address ?? p.addressUnit ?? "";
   const city = p.city ?? "";
   const state = p.state ?? "";
-  const zip = p.postalCode ?? p.zipCode ?? p.zip ?? "";
+  const zip = p.zipCode ?? "";
   const parts = [line1, city, state, zip].filter(Boolean);
   return parts.join(", ");
 }
 
-/** Map a Realie property object to PropertySearchResult */
+/** Map a Realie property object to PropertySearchResult (schema field names) */
 function mapRealiePropertyToSearchResult(p: any, distance?: number): PropertySearchResult {
   return {
     address: formatPropertyAddress(p) || "Unknown address",
-    listPrice: p.transferPrice ?? p.mostRecentAssessedMarketValue ?? undefined,
+    listPrice: p.transferPrice ?? p.totalMarketValue ?? p.totalAssessedValue ?? undefined,
     beds: p.totalBedrooms ?? undefined,
     baths: p.totalBathrooms ?? undefined,
     sqft: p.buildingArea ?? undefined,
     distance,
-    propertyType: p.useCodeDescription ?? p.propertyType ?? undefined,
+    propertyType: p.useCode ?? undefined,
   };
 }
 
