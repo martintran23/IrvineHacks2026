@@ -8,6 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { MOCK_PROPERTIES } from "@/lib/mock-data";
 import { PropertySearch } from "@/components/PropertySearch";
+import { UsageDisplay } from "@/components/UsageDisplay";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -225,6 +226,9 @@ export default function LandingPage() {
           <span>Disclaimer: Not legal or financial advice. Always consult professionals.</span>
         </div>
       </footer>
+
+      {/* Usage Display */}
+      <UsageDisplay />
     </div>
   );
 }

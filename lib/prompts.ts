@@ -37,15 +37,32 @@ export function buildAnalysisPrompt(params: {
   listingText?: string;
   listPrice?: number;
   propertyType?: string;
+  realieData?: {
+    beds?: number;
+    baths?: number;
+    sqft?: number;
+    lotSqft?: number;
+    yearBuilt?: number;
+  };
 }): string {
-  const { address, listingText, listPrice, propertyType } = params;
+  const { address, listingText, listPrice, propertyType, realieData } = params;
+
+  let propertyDetails = "";
+  if (realieData) {
+    propertyDetails = "\n## PROPERTY DETAILS (from Realie API)\n";
+    if (realieData.beds) propertyDetails += `Bedrooms: ${realieData.beds}\n`;
+    if (realieData.baths) propertyDetails += `Bathrooms: ${realieData.baths}\n`;
+    if (realieData.sqft) propertyDetails += `Square Feet: ${realieData.sqft.toLocaleString()}\n`;
+    if (realieData.lotSqft) propertyDetails += `Lot Size: ${realieData.lotSqft.toLocaleString()} sqft\n`;
+    if (realieData.yearBuilt) propertyDetails += `Year Built: ${realieData.yearBuilt}\n`;
+  }
 
   return `Analyze this property listing and return a JSON object.
 
 ## PROPERTY INPUT
 Address: ${address}
 ${listPrice ? `List Price: $${listPrice.toLocaleString()}` : "List Price: not provided"}
-${propertyType ? `Property Type: ${propertyType}` : ""}
+${propertyType ? `Property Type: ${propertyType}` : ""}${propertyDetails}
 ${listingText ? `\n## LISTING TEXT\n${listingText}` : "\nNo listing text provided — analyze based on address and public knowledge only."}
 
 ## INSTRUCTIONS

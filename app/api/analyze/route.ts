@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { analyzeProperty } from "@/lib/claude";
+import { getRealiePropertyDetails } from "@/lib/realie";
 import { AnalyzeRequestSchema } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -25,22 +26,50 @@ export async function POST(request: NextRequest) {
 
     const { address, listingText, listPrice, propertyType } = parsed.data;
 
+    // 1. Try to fetch property details from Realie API
+    let realieData = null;
+    try {
+      realieData = await getRealiePropertyDetails(address);
+      if (realieData) {
+        console.log(`[API] ✅ Found property in Realie API: ${realieData.address}`);
+      }
+    } catch (error) {
+      console.log(`[API] ⚠️  Realie API lookup failed, continuing with provided data`);
+    }
+
+    // Merge Realie data with provided data (provided data takes precedence)
+    const finalListingText = listingText || realieData?.listingText || null;
+    const finalListPrice = listPrice || realieData?.listPrice || null;
+    const finalPropertyType = propertyType || realieData?.propertyType || null;
+
     // 1. Create a pending analysis record
     const analysis = await prisma.propertyAnalysis.create({
       data: {
         address,
-        listingText: listingText ?? null,
-        listPrice: listPrice ?? null,
-        propertyType: propertyType ?? null,
+        listingText: finalListingText,
+        listPrice: finalListPrice,
+        propertyType: finalPropertyType,
         status: "analyzing",
       },
     });
 
-    // 2. Run Claude analysis (or mock fallback)
+    // 2. Run Claude analysis with Realie data if available
     let result;
     try {
       console.log(`[API] Starting analysis for: ${address}`);
-      result = await analyzeProperty({ address, listingText, listPrice, propertyType });
+      result = await analyzeProperty({ 
+        address, 
+        listingText: finalListingText, 
+        listPrice: finalListPrice, 
+        propertyType: finalPropertyType,
+        realieData: realieData ? {
+          beds: realieData.beds,
+          baths: realieData.baths,
+          sqft: realieData.sqft,
+          lotSqft: realieData.lotSqft,
+          yearBuilt: realieData.yearBuilt,
+        } : undefined,
+      });
       console.log(`[API] Analysis complete - Trust Score: ${result.trustScore}, Claims: ${result.claims.length}`);
     } catch (err: any) {
       console.error(`[API] Analysis failed for ${address}:`, err);

@@ -2,11 +2,15 @@
  * GET /api/search?address=...
  * 
  * Searches for properties near a given address.
- * Uses geocoding to find coordinates, then searches for nearby properties.
- * Falls back to mock data if external APIs are unavailable.
+ * Workflow:
+ * 1. Nominatim geocodes the address to get coordinates
+ * 2. Realie API searches for properties near those coordinates
+ * 3. Returns properties ready for Claude analysis
+ * Falls back to mock data if APIs are unavailable.
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { searchRealieProperties } from "@/lib/realie";
 
 interface PropertySearchResult {
   address: string;
@@ -17,6 +21,22 @@ interface PropertySearchResult {
   distance?: number; // in miles
   listingText?: string;
   propertyType?: string;
+}
+
+/**
+ * Calculate distance between two coordinates (Haversine formula)
+ * Returns distance in miles
+ */
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3959; // Earth's radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
 }
 
 /**
@@ -126,14 +146,50 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Step 2: Search for nearby properties
-    // In production, you would:
-    // - Call a real estate API (Zillow, Realtor.com, etc.)
-    // - Query your own database of listings
-    // - Use a property data provider
-    
-    // For now, generate mock properties near the coordinates
-    const properties = generateNearbyProperties(coords.lat, coords.lon, address);
+    // Step 2: Search for nearby properties using Realie API
+    let properties: PropertySearchResult[] = [];
+    let source = 'mock';
+
+    const realieProperties = await searchRealieProperties({
+      lat: coords.lat,
+      lon: coords.lon,
+      radius: radius,
+      limit: 20,
+    });
+
+    if (realieProperties && realieProperties.length > 0) {
+      // Convert Realie properties to our format
+      properties = realieProperties.map((prop) => {
+        // Calculate distance from center (simple haversine approximation)
+        const distance = calculateDistance(
+          coords.lat,
+          coords.lon,
+          prop.latitude || coords.lat,
+          prop.longitude || coords.lon
+        );
+
+        return {
+          address: prop.address,
+          listPrice: prop.listPrice,
+          beds: prop.beds,
+          baths: prop.baths,
+          sqft: prop.sqft,
+          distance: distance,
+          listingText: prop.listingText,
+          propertyType: prop.propertyType,
+        };
+      });
+
+      // Sort by distance
+      properties.sort((a, b) => (a.distance || 0) - (b.distance || 0));
+      source = 'realie';
+      console.log(`[Search] ✅ Found ${properties.length} properties from Realie API`);
+    } else {
+      // Fallback to mock data if Realie API unavailable
+      console.log(`[Search] ⚠️  Realie API unavailable, using mock data`);
+      properties = generateNearbyProperties(coords.lat, coords.lon, address);
+      source = 'mock';
+    }
 
     return NextResponse.json({
       properties: properties.slice(0, 6), // Return top 6
@@ -142,7 +198,7 @@ export async function GET(request: NextRequest) {
         lat: coords.lat,
         lon: coords.lon,
       },
-      source: 'geocoded',
+      source: source,
     });
   } catch (error) {
     console.error('[/api/search] Error:', error);

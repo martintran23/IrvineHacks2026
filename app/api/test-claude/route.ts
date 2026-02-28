@@ -23,7 +23,7 @@ export async function GET() {
 
     // Simple test call
     const testMessage = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514",
       max_tokens: 100,
       messages: [
         {
@@ -42,7 +42,7 @@ export async function GET() {
       apiKeyPresent: true,
       apiKeyPrefix: apiKey.substring(0, 10) + "...",
       testResponse: response,
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-sonnet-4-20250514",
     });
   } catch (error: any) {
     return NextResponse.json({
