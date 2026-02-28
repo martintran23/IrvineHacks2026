@@ -47,7 +47,7 @@ export default function ResultsPage() {
   if (error || !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+        <AlertTriangle className="w-12 h-12 text-cyan-300 mb-4" />
         <p className="text-muted-foreground">{error || "Something went wrong"}</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/")}>
           Try Another Property
@@ -87,7 +87,7 @@ export default function ResultsPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
       {/* Top: Trust Score + Summary */}
-      <div className="flex flex-col md:flex-row gap-6 md:gap-10 mb-8">
+      <div className="flex flex-col md:flex-row gap-6 md:gap-10 mb-8 cyber-panel rounded-2xl p-6">
         {/* Trust ring */}
         <div className="flex flex-col items-center shrink-0">
           <TrustScoreRing score={data.trustScore} label={data.trustLabel} />
@@ -135,7 +135,7 @@ export default function ResultsPage() {
 
           {/* Quick link to war room */}
           <Link href={`/warroom/${data.id}`} className="inline-block mt-4">
-            <Button variant="outline" size="sm" className="gap-2 text-xs border-red-500/20 text-red-400 hover:bg-red-500/10">
+            <Button variant="outline" size="sm" className="gap-2 text-xs border-cyan-300/30 text-cyan-200 hover:bg-cyan-300/10">
               <Eye className="w-3.5 h-3.5" />
               Open Buyer War Room
               <ArrowRight className="w-3.5 h-3.5" />
@@ -184,8 +184,8 @@ export default function ResultsPage() {
             className={cn(
               "px-3 py-1.5 rounded-md text-xs font-mono transition-all",
               activeCategory === "all"
-                ? "bg-white/10 text-foreground"
-                : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]"
+                ? "cyber-chip text-foreground"
+                : "bg-slate-400/[0.07] text-muted-foreground hover:bg-fuchsia-400/[0.12]"
             )}
           >
             All ({claims.length})
@@ -200,8 +200,8 @@ export default function ResultsPage() {
                 className={cn(
                   "px-3 py-1.5 rounded-md text-xs font-mono transition-all",
                   activeCategory === cat
-                    ? "bg-white/10 text-foreground"
-                    : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]"
+                    ? "cyber-chip text-foreground"
+                    : "bg-slate-400/[0.07] text-muted-foreground hover:bg-fuchsia-400/[0.12]"
                 )}
               >
                 {CATEGORY_LABELS[cat]} ({count})
@@ -229,12 +229,12 @@ export default function ResultsPage() {
       </div>
 
       {/* CTA to war room */}
-      <div className="text-center py-8 border-t border-white/5">
+      <div className="text-center py-8 border-t border-cyan-300/10">
         <p className="text-muted-foreground text-sm mb-4">
           Ready to take action on these findings?
         </p>
         <Link href={`/warroom/${data.id}`}>
-          <Button className="bg-red-500 hover:bg-red-600 text-white gap-2">
+          <Button className="bg-gradient-to-r from-cyan-400 to-fuchsia-500 hover:brightness-110 text-slate-950 gap-2 border border-cyan-200/40 cyber-glow">
             <Shield className="w-4 h-4" />
             Enter Buyer War Room
             <ArrowRight className="w-4 h-4" />

@@ -11,7 +11,7 @@ interface Props {
 
 export function ComparablesTable({ comparables, subjectPpsf }: Props) {
   return (
-    <Card className="border-white/10 bg-white/[0.02]">
+    <Card className="cyber-panel">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm font-mono tracking-wide text-muted-foreground">
           COMPARABLE SALES
@@ -21,7 +21,7 @@ export function ComparablesTable({ comparables, subjectPpsf }: Props) {
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-white/10">
+              <tr className="border-b border-cyan-300/20">
                 <th className="text-left py-2 pr-3 text-muted-foreground font-mono font-normal">Address</th>
                 <th className="text-right py-2 px-2 text-muted-foreground font-mono font-normal">Price</th>
                 <th className="text-right py-2 px-2 text-muted-foreground font-mono font-normal">Sqft</th>
@@ -33,14 +33,14 @@ export function ComparablesTable({ comparables, subjectPpsf }: Props) {
               {comparables.map((comp, i) => {
                 const ppsfDiff = subjectPpsf ? ((subjectPpsf - comp.ppsf) / comp.ppsf) * 100 : null;
                 return (
-                  <tr key={i} className="border-b border-white/5 hover:bg-white/[0.02]">
+                  <tr key={i} className="border-b border-cyan-300/10 hover:bg-cyan-500/[0.05]">
                     <td className="py-2.5 pr-3 text-foreground">{comp.address}</td>
                     <td className="py-2.5 px-2 text-right font-mono text-foreground">{formatCurrency(comp.price)}</td>
                     <td className="py-2.5 px-2 text-right font-mono text-muted-foreground">{comp.sqft.toLocaleString()}</td>
                     <td className="py-2.5 px-2 text-right font-mono">
                       <span className="text-foreground">${comp.ppsf}</span>
                       {ppsfDiff !== null && (
-                        <span className={`ml-1 text-[10px] ${ppsfDiff < -5 ? "text-red-400" : ppsfDiff > 5 ? "text-emerald-400" : "text-muted-foreground"}`}>
+                        <span className={`ml-1 text-[10px] ${ppsfDiff < -5 ? "text-rose-300" : ppsfDiff > 5 ? "text-emerald-400" : "text-muted-foreground"}`}>
                           {ppsfDiff > 0 ? "+" : ""}{ppsfDiff.toFixed(0)}%
                         </span>
                       )}

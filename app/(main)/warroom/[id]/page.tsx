@@ -46,7 +46,7 @@ export default function WarRoomPage() {
   if (!data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <AlertTriangle className="w-12 h-12 text-red-400 mb-4" />
+        <AlertTriangle className="w-12 h-12 text-cyan-300 mb-4" />
         <p className="text-muted-foreground">Analysis not found</p>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/")}>Go Home</Button>
       </div>
@@ -109,19 +109,19 @@ export default function WarRoomPage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
         {[
           {
-            icon: <AlertTriangle className="w-4 h-4 text-red-400" />,
+            icon: <AlertTriangle className="w-4 h-4 text-rose-300" />,
             label: "Critical Actions",
             value: criticalCount,
-            accent: criticalCount > 0 ? "border-red-500/20 bg-red-500/5" : "",
+            accent: criticalCount > 0 ? "border-rose-400/25 bg-rose-400/10" : "",
           },
           {
-            icon: <MessageCircleQuestion className="w-4 h-4 text-sky-400" />,
+            icon: <MessageCircleQuestion className="w-4 h-4 text-cyan-300" />,
             label: "Questions",
             value: categoryStats.question,
             accent: "",
           },
           {
-            icon: <FileText className="w-4 h-4 text-violet-400" />,
+            icon: <FileText className="w-4 h-4 text-fuchsia-300" />,
             label: "Documents",
             value: categoryStats.document,
             accent: "",
@@ -136,7 +136,7 @@ export default function WarRoomPage() {
           <div
             key={stat.label}
             className={cn(
-              "flex items-center gap-3 p-3 rounded-lg border border-white/10 bg-white/[0.02]",
+              "flex items-center gap-3 p-3 rounded-lg border border-cyan-300/20 bg-cyan-500/[0.04] backdrop-blur-sm",
               stat.accent
             )}
           >
@@ -161,15 +161,15 @@ export default function WarRoomPage() {
             className={cn(
               "px-2.5 py-1 rounded-md text-xs font-mono transition-all",
               filterCategory === cat
-                ? "bg-white/10 text-foreground"
-                : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]"
+                ? "cyber-chip text-foreground"
+                : "bg-slate-400/[0.07] text-muted-foreground hover:bg-fuchsia-400/[0.12]"
             )}
           >
             {cat === "all" ? "All Types" : cat.charAt(0).toUpperCase() + cat.slice(1)}
           </button>
         ))}
 
-        <span className="w-px h-4 bg-white/10 mx-1" />
+        <span className="w-px h-4 bg-cyan-300/20 mx-1" />
 
         {/* Priority filters */}
         {(["all", "critical", "high", "medium", "low"] as const).map((pri) => (
@@ -179,8 +179,8 @@ export default function WarRoomPage() {
             className={cn(
               "px-2.5 py-1 rounded-md text-xs font-mono transition-all",
               filterPriority === pri
-                ? "bg-white/10 text-foreground"
-                : "bg-white/[0.03] text-muted-foreground hover:bg-white/[0.06]"
+                ? "cyber-chip text-foreground"
+                : "bg-slate-400/[0.07] text-muted-foreground hover:bg-fuchsia-400/[0.12]"
             )}
           >
             {pri === "all" ? "All Priorities" : pri.charAt(0).toUpperCase() + pri.slice(1)}
@@ -189,7 +189,7 @@ export default function WarRoomPage() {
       </div>
 
       {/* Progress */}
-      <div className="flex items-center gap-3 mb-6 p-3 rounded-lg border border-white/10 bg-white/[0.02]">
+      <div className="flex items-center gap-3 mb-6 p-3 rounded-lg border border-cyan-300/20 bg-cyan-500/[0.04]">
         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-1">
@@ -200,7 +200,7 @@ export default function WarRoomPage() {
               {completed.size}/{actionItems.length}
             </span>
           </div>
-          <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+          <div className="w-full h-1.5 bg-cyan-950/70 rounded-full overflow-hidden">
             <div
               className="h-full bg-emerald-500 rounded-full transition-all duration-500"
               style={{ width: `${(completed.size / Math.max(actionItems.length, 1)) * 100}%` }}
@@ -219,7 +219,7 @@ export default function WarRoomPage() {
                 "mt-4 w-5 h-5 rounded-full border-2 shrink-0 transition-all",
                 completed.has(item.id)
                   ? "bg-emerald-500 border-emerald-500"
-                  : "border-white/20 hover:border-white/40"
+                  : "border-cyan-300/30 hover:border-cyan-200/60"
               )}
             >
               {completed.has(item.id) && (
@@ -245,11 +245,11 @@ export default function WarRoomPage() {
       )}
 
       {/* Disclaimer */}
-      <div className="mt-12 p-4 rounded-lg border border-amber-500/10 bg-amber-500/[0.03]">
+      <div className="mt-12 p-4 rounded-lg border border-fuchsia-400/20 bg-fuchsia-500/[0.06]">
         <div className="flex items-start gap-3">
-          <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <AlertTriangle className="w-4 h-4 text-fuchsia-300 shrink-0 mt-0.5" />
           <div className="text-xs text-muted-foreground leading-relaxed">
-            <p className="font-semibold text-amber-400/80 mb-1">Disclaimer</p>
+            <p className="font-semibold text-fuchsia-200 mb-1">Disclaimer</p>
             <p>
               DealBreakr AI is a research tool, not a licensed inspection, appraisal,
               or legal service. All findings are based on AI analysis and publicly

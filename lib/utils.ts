@@ -65,19 +65,19 @@ export function getVerdictLabel(verdict: Verdict): string {
 // ─── Severity helpers ──────────────────────────────────────────────
 export function getSeverityColor(severity: Severity): string {
   switch (severity) {
-    case "critical": return "text-red-400";
-    case "warning": return "text-amber-400";
+    case "critical": return "text-rose-300";
+    case "warning": return "text-amber-300";
     case "caution": return "text-yellow-300";
-    case "info": return "text-sky-400";
+    case "info": return "text-cyan-300";
   }
 }
 
 export function getSeverityBg(severity: Severity): string {
   switch (severity) {
-    case "critical": return "bg-red-500/10 border-red-500/30";
-    case "warning": return "bg-amber-500/10 border-amber-500/30";
-    case "caution": return "bg-yellow-500/10 border-yellow-500/30";
-    case "info": return "bg-sky-500/10 border-sky-500/30";
+    case "critical": return "bg-rose-500/10 border-rose-400/30";
+    case "warning": return "bg-amber-500/10 border-amber-400/30";
+    case "caution": return "bg-yellow-500/10 border-yellow-400/30";
+    case "info": return "bg-cyan-500/10 border-cyan-300/30";
   }
 }
 
@@ -103,12 +103,12 @@ export function formatPercent(value: number): string {
 // ─── Category risk chart data ──────────────────────────────────────
 export function getCategoryChartColor(category: ScoringCategory): string {
   const colors: Record<ScoringCategory, string> = {
-    record_mismatch: "#f97316",
-    pricing_anomaly: "#ef4444",
-    ownership_title: "#8b5cf6",
-    disclosure_ambiguity: "#f59e0b",
-    neighborhood_fit: "#06b6d4",
-    renovation_permit: "#ec4899",
+    record_mismatch: "#fb7185",
+    pricing_anomaly: "#f97316",
+    ownership_title: "#c084fc",
+    disclosure_ambiguity: "#facc15",
+    neighborhood_fit: "#22d3ee",
+    renovation_permit: "#f472b6",
   };
   return colors[category];
 }
