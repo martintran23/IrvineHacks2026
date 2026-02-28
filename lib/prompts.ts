@@ -43,6 +43,7 @@ export function buildAnalysisPrompt(params: {
   propertyType?: string;
   snapshotFromApi?: PropertySnapshot | null;
   comparablesFromApi?: ComparableProperty[] | null;
+  zillowScraped?: { listPrice?: number | null; listingText?: string | null; zillowUrl?: string | null } | null;
 }): string {
   const {
     address,
@@ -51,6 +52,7 @@ export function buildAnalysisPrompt(params: {
     propertyType,
     snapshotFromApi,
     comparablesFromApi,
+    zillowScraped,
   } = params;
 
   const snapshotJson = snapshotFromApi
@@ -62,16 +64,28 @@ export function buildAnalysisPrompt(params: {
       ? JSON.stringify(comparablesFromApi, null, 2)
       : "[]";
 
+  const zillowSection =
+    zillowScraped && (zillowScraped.listPrice ?? zillowScraped.listingText)
+      ? `
+## LISTING DATA FROM ZILLOW (SCRAPED)
+The following was scraped from Zillow for this address. Use it alongside Realie and any user-provided listing text. Prefer scraped list price when the user did not provide one.
+${zillowScraped.listPrice ? `List price (Zillow): $${zillowScraped.listPrice.toLocaleString()}` : ""}
+${zillowScraped.listingText ? `\nListing snippet (Zillow):\n${zillowScraped.listingText}` : ""}
+${zillowScraped.zillowUrl ? `\nZillow search: ${zillowScraped.zillowUrl}` : ""}
+`
+      : "";
+
   return `Analyze this property listing and return a JSON object.
 
 ## PROPERTY INPUT
 Address: ${address}
 ${listPrice ? `List Price: $${listPrice.toLocaleString()}` : "List Price: not provided"}
 ${propertyType ? `Property Type: ${propertyType}` : ""}
-${listingText ? `\n## LISTING TEXT\n${listingText}` : "\nNo listing text provided — analyze based on address and public knowledge only."}
+${listingText ? `\n## LISTING TEXT (USER-PROVIDED)\n${listingText}` : "\nNo listing text provided — analyze based on address, Zillow data (if present), and public records."}
+${zillowSection}
 
-## PUBLIC RECORDS (FROM EXTERNAL PROVIDER)
-Use the following data (from Realie or another external property data provider) as your primary ground truth when evaluating record_mismatch and pricing_anomaly. If fields are missing or obviously inconsistent, you may infer cautiously and mark confidence accordingly.
+## PUBLIC RECORDS (FROM REALIE)
+Use the following data (from Realie) as your primary ground truth when evaluating record_mismatch and pricing_anomaly. If fields are missing or obviously inconsistent, you may infer cautiously and mark confidence accordingly.
 
 propertySnapshotFromExternal = ${snapshotJson}
 
@@ -79,12 +93,13 @@ comparablesFromExternal = ${comparablesJson}
 
 ## INSTRUCTIONS
 1. Start from the external property data above wherever it is present. Treat it as the most reliable source of facts.
-2. If external fields are missing, you may generate reasonable estimates and clearly reflect uncertainty via confidence scores.
-3. Provide market context with comparable properties (you may augment comparablesFromExternal with your own inferred comparables).
-4. Extract every verifiable CLAIM from the listing text (or infer common claims if no text provided).
-5. For each claim, provide evidence items that support or contradict it, explicitly referencing Estated data where relevant.
-6. Generate action items for a buyer's due-diligence war room.
-7. Calculate a trust score (0–100).
+2. Use Zillow-scraped list price and snippet when provided; combine with user listing text and Realie data.
+3. If external fields are missing, you may generate reasonable estimates and clearly reflect uncertainty via confidence scores.
+4. Provide market context with comparable properties (you may augment comparablesFromExternal with your own inferred comparables).
+5. Extract every verifiable CLAIM from the listing text (or infer common claims if no text provided).
+6. For each claim, provide evidence items that support or contradict it, explicitly referencing Realie or Zillow data where relevant.
+7. Generate action items for a buyer's due-diligence war room.
+8. Calculate a trust score (0–100).
 
 ## REQUIRED JSON SCHEMA
 {

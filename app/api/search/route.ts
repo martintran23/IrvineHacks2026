@@ -1,9 +1,9 @@
 /**
- * GET /api/search?address=...
+ * GET /api/search?address=... OR ?latitude=...&longitude=...
  *
  * Searches for properties using the Realie.ai API.
- * Uses geocoding for lat/lon, then Realie Location Search; if that fails,
- * parses the query and uses Realie Property Search (state/city/zip).
+ * - If latitude & longitude are provided: search by location (user geolocation).
+ * - Otherwise: geocode address then Realie Location Search, or Realie Property Search.
  * Requires REALIE_API_KEY; returns no mock data.
  */
 
@@ -50,14 +50,9 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const address = searchParams.get("address");
+    const latParam = searchParams.get("latitude");
+    const lonParam = searchParams.get("longitude");
     const radius = parseFloat(searchParams.get("radius") || "1.5"); // default 1.5 miles (Realie max 2)
-
-    if (!address || address.length < 3) {
-      return NextResponse.json(
-        { error: "Please provide a valid address or area (e.g. city, state or ZIP)" },
-        { status: 400 }
-      );
-    }
 
     if (!process.env.REALIE_API_KEY) {
       return NextResponse.json(
@@ -69,7 +64,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 1) Try geocode + Realie location search
+    // 1) If user provided lat/lon (e.g. from geolocation), search by location directly
+    if (latParam != null && lonParam != null) {
+      const latitude = parseFloat(latParam);
+      const longitude = parseFloat(lonParam);
+      if (!Number.isNaN(latitude) && !Number.isNaN(longitude)) {
+        const properties = await searchByLocation(
+          latitude,
+          longitude,
+          Math.min(Math.max(radius, 0.1), 2),
+          10
+        );
+        return NextResponse.json({
+          properties: properties.slice(0, 10),
+          center: { lat: latitude, lon: longitude },
+          source: "realie_location",
+        });
+      }
+    }
+
+    // 2) Address-based search: require address
+    if (!address || address.length < 3) {
+      return NextResponse.json(
+        { error: "Please provide an address or use your current location." },
+        { status: 400 }
+      );
+    }
+
+    // 3) Try geocode + Realie location search
     const coords = await geocodeAddress(address);
     if (coords) {
       const properties = await searchByLocation(
@@ -89,7 +111,7 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 2) Fallback: parse query and use Realie property search (state required)
+    // 4) Fallback: parse query and use Realie property search (state required)
     const parsed = parseAddressQuery(address);
     if (parsed) {
       const properties = await searchByQuery({

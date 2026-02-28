@@ -10,6 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { analyzeProperty } from "@/lib/claude";
 import { AnalyzeRequestSchema } from "@/types";
 import { fetchPropertyData } from "@/lib/property-data";
+import { scrapeZillowListing } from "@/lib/zillow-scraper";
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,17 +41,37 @@ export async function POST(request: NextRequest) {
     // 2. Fetch external property data (Realie) for ground truth
     const realieData = await fetchPropertyData(address);
 
-    // 3. Run Claude analysis (requires ANTHROPIC_API_KEY; uses Realie data for ground truth)
+    // 3. Scrape Zillow for listing price and snippet (may be blocked or fail)
+    const zillowResult = await scrapeZillowListing(address);
+    const zillowData =
+      zillowResult.status === "ok" && (zillowResult.listPrice ?? zillowResult.listingText)
+        ? {
+            listPrice: zillowResult.listPrice ?? undefined,
+            listingText: zillowResult.listingText ?? undefined,
+            zillowUrl: zillowResult.zillowUrl ?? undefined,
+          }
+        : null;
+    if (zillowResult.status === "blocked") {
+      console.log("[API] Zillow unavailable (blocked/rate-limited). Using Realie + user list price.");
+    }
+
+    // Effective price: user > Zillow scraped > Realie last sale
+    const effectiveListPrice =
+      listPrice ?? zillowData?.listPrice ?? realieData.snapshot?.lastSalePrice ?? null;
+    const effectiveListingText = listingText ?? zillowData?.listingText ?? undefined;
+
+    // 4. Run Claude analysis (Realie + Zillow scraped data)
     let result;
     try {
       console.log(`[API] Starting analysis for: ${address}`);
       result = await analyzeProperty({
         address,
-        listingText,
-        listPrice,
+        listingText: effectiveListingText,
+        listPrice: effectiveListPrice ?? undefined,
         propertyType,
         snapshotFromApi: realieData.snapshot,
         comparablesFromApi: realieData.comparables,
+        zillowScraped: zillowData,
       });
       console.log(`[API] Analysis complete - Trust Score: ${result.trustScore}, Claims: ${result.claims.length}`);
     } catch (err: any) {
@@ -73,9 +94,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Persist all results in a transaction
+    // 5. Persist all results in a transaction
     await prisma.$transaction(async (tx) => {
-      // Update the main analysis record
       await tx.propertyAnalysis.update({
         where: { id: analysis.id },
         data: {
@@ -85,6 +105,8 @@ export async function POST(request: NextRequest) {
           propertySnapshot: JSON.stringify(result.propertySnapshot),
           marketContext: JSON.stringify(result.marketContext),
           status: "complete",
+          ...(effectiveListPrice != null && { listPrice: effectiveListPrice }),
+          ...(effectiveListingText != null && { listingText: effectiveListingText }),
         },
       });
 

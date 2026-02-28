@@ -173,11 +173,10 @@ function formatPropertyAddress(p: any): string {
   return parts.join(", ");
 }
 
-/** Map a Realie property object to PropertySearchResult (schema field names) */
+/** Map a Realie property object to PropertySearchResult (schema field names). listPrice omitted — Realie data is not current listing price. */
 function mapRealiePropertyToSearchResult(p: any, distance?: number): PropertySearchResult {
   return {
     address: formatPropertyAddress(p) || "Unknown address",
-    listPrice: p.transferPrice ?? p.totalMarketValue ?? p.totalAssessedValue ?? undefined,
     beds: p.totalBedrooms ?? undefined,
     baths: p.totalBathrooms ?? undefined,
     sqft: p.buildingArea ?? undefined,
